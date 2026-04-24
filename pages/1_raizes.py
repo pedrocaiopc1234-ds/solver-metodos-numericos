@@ -1,200 +1,177 @@
 """
-Métodos para Encontrar Raízes — Bissecção, Newton-Raphson, Secante
+Métodos para Encontrar Raízes — Dash Page
 """
 
-import streamlit as st
+import dash
+from dash import html, dcc, callback, Output, Input, State, dash_table
+import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
 from core.roots import bisection, newton, secant
 from core.plot import plot_bisection, plot_newton, plot_secant
-from utils.ui import parse_function, show_result_card
+from utils.dash_ui import parse_function
 
-st.set_page_config(page_title="Raízes", page_icon="🎯", layout="wide")
+dash.register_page(__name__, path="/raizes", title="Raízes", name="Raízes")
 
-st.title("🎯 Métodos para Encontrar Raízes")
+METHODS = [
+    {"label": "Bissecção", "value": "bisection"},
+    {"label": "Newton-Raphson", "value": "newton"},
+    {"label": "Secante", "value": "secant"},
+]
 
-method = st.selectbox(
-    "Selecione o método:",
-    ["Bissecção", "Newton-Raphson", "Secante"],
-    help="Escolha o método numérico para encontrar raízes de f(x)=0"
+layout = dbc.Container([
+    html.H2("🎯 Métodos para Encontrar Raízes", className="mb-3"),
+    dbc.Card([
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Método"),
+                    dcc.Dropdown(
+                        id="root-method",
+                        options=METHODS,
+                        value="bisection",
+                        clearable=False,
+                    ),
+                ], width=12, md=4),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("f(x) ="),
+                    dbc.Input(id="root-f", type="text", value="x**2 - 4"),
+                ], width=12, md=6),
+            ], className="mb-3"),
+            html.Div(id="newton-df-container", children=[
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Label("f'(x) ="),
+                        dbc.Input(id="root-df", type="text", value="2*x"),
+                    ], width=12, md=6),
+                ], className="mb-3"),
+            ]),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("a / x₀"),
+                    dbc.Input(id="root-a", type="number", value=0.0, step=0.1),
+                ], width=6, md=3),
+                dbc.Col([
+                    dbc.Label("b / x₁"),
+                    dbc.Input(id="root-b", type="number", value=3.0, step=0.1),
+                ], width=6, md=3),
+                dbc.Col([
+                    dbc.Label("Tolerância"),
+                    dbc.Input(id="root-tol", type="number", value=1e-6, step=1e-7),
+                ], width=6, md=3),
+                dbc.Col([
+                    dbc.Label("Máximo de iterações"),
+                    dcc.Slider(id="root-max-iter", min=10, max=500, step=10, value=100,
+                               marks={10:"10",100:"100",200:"200",300:"300",400:"400",500:"500"}),
+                ], width=6, md=3),
+            ], className="mb-3"),
+            dbc.Button("▶️ Calcular", id="root-calc", color="primary", className="mt-2"),
+        ])
+    ], className="mb-4"),
+
+    html.Div(id="root-output"),
+], fluid=True)
+
+
+@callback(
+    Output("newton-df-container", "style"),
+    Input("root-method", "value"),
 )
+def toggle_df(method):
+    return {"display": "block"} if method == "newton" else {"display": "none"}
 
-st.markdown("---")
 
-if method == "Bissecção":
-    st.subheader("📐 Método da Bissecção")
-    st.markdown(
-        "O método da bissecção divide o intervalo `[a, b]` ao meio repetidamente "
-        "até que a raiz seja encontrada com a tolerância desejada. "
-        "**Requisito:** `f(a)` e `f(b)` devem ter sinais opostos."
-    )
+@callback(
+    Output("root-output", "children"),
+    Input("root-calc", "n_clicks"),
+    State("root-method", "value"),
+    State("root-f", "value"),
+    State("root-df", "value"),
+    State("root-a", "value"),
+    State("root-b", "value"),
+    State("root-tol", "value"),
+    State("root-max-iter", "value"),
+    prevent_initial_call=True,
+)
+def calculate(n_clicks, method, f_str, df_str, a, b, tol, max_iter):
+    if n_clicks is None:
+        return dash.no_update
+    try:
+        f = parse_function(f_str or "x")
+        tol = float(tol) if tol is not None else 1e-6
+        max_iter = int(max_iter) if max_iter is not None else 100
+        a = float(a) if a is not None else 0.0
+        b = float(b) if b is not None else 0.0
 
-    col1, col2 = st.columns(2)
-    with col1:
-        f_str = st.text_input("f(x) =", value="x**2 - 4", help="Expressão da função. Use `x` como variável.")
-        a = st.number_input("a (início do intervalo):", value=0.0, format="%.6f")
-    with col2:
-        b = st.number_input("b (fim do intervalo):", value=3.0, format="%.6f")
-        tol = st.number_input("Tolerância:", value=1e-6, format="%.2e")
-    max_iter = st.slider("Máximo de iterações:", 10, 500, 100)
-
-    if st.button("▶️ Calcular", use_container_width=True):
-        try:
-            f = parse_function(f_str)
-            fa, fb = f(a), f(b)
-
-            col_info = st.columns(3)
-            col_info[0].metric("f(a)", f"{fa:.6f}")
-            col_info[1].metric("f(b)", f"{fb:.6f}")
-            col_info[2].metric("Sinal", "OK ✅" if fa * fb <= 0 else "Inválido ❌")
-
+        if method == "bisection":
             result = bisection(f, a, b, tol, max_iter)
-            show_result_card(result, "Raiz")
+            fig = plot_bisection(f, a, b, result.get("root"), result.get("iterations")) if result.get("success") else None
+        elif method == "newton":
+            df = parse_function(df_str or "1")
+            result = newton(f, df, a, tol, max_iter)
+            fig = plot_newton(f, df, a, result.get("root"), result.get("iterations_data")) if result.get("success") else None
+        else:
+            result = secant(f, a, b, tol, max_iter)
+            fig = plot_secant(f, a, b, result.get("root"), result.get("iterations_data")) if result.get("success") else None
 
-            if result["success"]:
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Raiz aproximada", f"{result['root']:.10f}")
-                c2.metric("Iterações", result["iterations"])
-                c3.metric("f(raiz)", f"{f(result['root']):.2e}")
+        children = []
+        if not result.get("success"):
+            children.append(dbc.Alert(result.get("error", "Erro desconhecido"), color="danger"))
+        else:
+            children.append(dbc.Alert("Raiz encontrada com sucesso!", color="success"))
+            root_val = result.get("root")
+            iterations = result.get("iterations", 0)
+            f_root = f(root_val) if root_val is not None else None
+            children.append(dbc.Row([
+                dbc.Col(dbc.Card([
+                    dbc.CardBody([
+                        html.H5("Raiz aproximada", className="card-title"),
+                        html.P(f"{root_val:.10f}", className="card-text"),
+                    ])
+                ]), width=4),
+                dbc.Col(dbc.Card([
+                    dbc.CardBody([
+                        html.H5("Iterações", className="card-title"),
+                        html.P(str(iterations), className="card-text"),
+                    ])
+                ]), width=4),
+                dbc.Col(dbc.Card([
+                    dbc.CardBody([
+                        html.H5("f(raiz)", className="card-title"),
+                        html.P(f"{f_root:.2e}", className="card-text"),
+                    ])
+                ]), width=4),
+            ], className="mb-3"))
 
-                st.markdown("#### Gráfico")
-                fig = plot_bisection(f, a, b, result["root"], result["iterations"])
-                st.plotly_chart(fig, use_container_width=True)
+        if fig:
+            children.append(dbc.Card([
+                dbc.CardBody([
+                    html.H5("Gráfico"),
+                    dcc.Graph(figure=fig),
+                ])
+            ], className="mb-3"))
 
-                if result.get("iterations_data"):
-                    st.markdown("#### Tabela de Iterações")
-                    df = pd.DataFrame(result["iterations_data"])
-                    df.index = df.index + 1
-                    df.index.name = "Iteração"
-                    st.dataframe(df.style.format({"a": "{:.8f}", "b": "{:.8f}", "c": "{:.8f}", "fc": "{:.2e}"}), use_container_width=True)
-            else:
-                if result.get("iterations_data"):
-                    st.markdown("#### Últimas Iterações")
-                    df = pd.DataFrame(result["iterations_data"])
-                    df.index = df.index + 1
-                    df.index.name = "Iteração"
-                    st.dataframe(df.style.format({"a": "{:.8f}", "b": "{:.8f}", "c": "{:.8f}", "fc": "{:.2e}"}), use_container_width=True)
-
-        except Exception as e:
-            st.error(f"Erro ao processar entrada: {e}")
-
-elif method == "Newton-Raphson":
-    st.subheader("🔥 Método de Newton-Raphson")
-    st.markdown(
-        "O método de Newton usa a derivada da função para aproximar a raiz de forma iterativa. "
-        "Converge rapidamente quando o chute inicial está próximo da raiz. "
-        "**Requisito:** você precisa informar `f(x)` e `f'(x)`."
-    )
-
-    col1, col2 = st.columns(2)
-    with col1:
-        f_str = st.text_input("f(x) =", value="x**2 - 4", help="Expressão da função.")
-        df_str = st.text_input("f'(x) =", value="2*x", help="Expressão da derivada.")
-    with col2:
-        x0 = st.number_input("Chute inicial x₀:", value=3.0, format="%.6f")
-        tol = st.number_input("Tolerância:", value=1e-6, format="%.2e")
-    max_iter = st.slider("Máximo de iterações:", 10, 500, 100)
-
-    if st.button("▶️ Calcular", use_container_width=True):
-        try:
-            f = parse_function(f_str)
-            df = parse_function(df_str)
-            result = newton(f, df, x0, tol, max_iter)
-            show_result_card(result, "Raiz")
-
-            if result["success"]:
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Raiz aproximada", f"{result['root']:.10f}")
-                c2.metric("Iterações", result["iterations"])
-                c3.metric("f(raiz)", f"{f(result['root']):.2e}")
-
-                st.markdown("#### Gráfico com Tangentes")
-                fig = plot_newton(f, df, x0, result["root"], result.get("iterations_data"))
-                st.plotly_chart(fig, use_container_width=True)
-
-                if result.get("iterations_data"):
-                    st.markdown("#### Tabela de Iterações")
-                    df_iter = pd.DataFrame(result["iterations_data"])
-                    df_iter.index = df_iter.index + 1
-                    df_iter.index.name = "Iteração"
-                    st.dataframe(
-                        df_iter.style.format({
-                            "x": "{:.8f}", "fx": "{:.2e}", "dfx": "{:.6f}", "x_next": "{:.8f}"
-                        }),
-                        use_container_width=True
+        it_data = result.get("iterations_data")
+        if it_data:
+            df = pd.DataFrame(it_data)
+            df.index = df.index + 1
+            df.index.name = "Iteração"
+            df = df.reset_index()
+            children.append(dbc.Card([
+                dbc.CardBody([
+                    html.H5("Tabela de Iterações"),
+                    dash_table.DataTable(
+                        data=df.to_dict("records"),
+                        columns=[{"name": str(c), "id": str(c)} for c in df.columns],
+                        style_table={"overflowX": "auto"},
+                        style_cell={"textAlign": "center"},
+                        page_size=10,
                     )
-            else:
-                if result.get("iterations_data"):
-                    st.markdown("#### Últimas Iterações")
-                    df_iter = pd.DataFrame(result["iterations_data"])
-                    df_iter.index = df_iter.index + 1
-                    df_iter.index.name = "Iteração"
-                    st.dataframe(
-                        df_iter.style.format({
-                            "x": "{:.8f}", "fx": "{:.2e}", "dfx": "{:.6f}", "x_next": "{:.8f}"
-                        }),
-                        use_container_width=True
-                    )
-        except Exception as e:
-            st.error(f"Erro ao processar entrada: {e}")
+                ])
+            ]))
 
-else:
-    st.subheader("📏 Método da Secante")
-    st.markdown(
-        "O método da secante aproxima a derivada usando dois pontos consecutivos, "
-        "evitando a necessidade de calcular a derivada analítica. "
-        "**Requisito:** dois chutes iniciais `x₀` e `x₁`."
-    )
-
-    col1, col2 = st.columns(2)
-    with col1:
-        f_str = st.text_input("f(x) =", value="x**2 - 4", help="Expressão da função.")
-        x0 = st.number_input("x₀:", value=0.0, format="%.6f")
-    with col2:
-        x1 = st.number_input("x₁:", value=3.0, format="%.6f")
-        tol = st.number_input("Tolerância:", value=1e-6, format="%.2e")
-    max_iter = st.slider("Máximo de iterações:", 10, 500, 100)
-
-    if st.button("▶️ Calcular", use_container_width=True):
-        try:
-            f = parse_function(f_str)
-            result = secant(f, x0, x1, tol, max_iter)
-            show_result_card(result, "Raiz")
-
-            if result["success"]:
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Raiz aproximada", f"{result['root']:.10f}")
-                c2.metric("Iterações", result["iterations"])
-                c3.metric("f(raiz)", f"{f(result['root']):.2e}")
-
-                st.markdown("#### Gráfico com Secantes")
-                fig = plot_secant(f, x0, x1, result["root"], result.get("iterations_data"))
-                st.plotly_chart(fig, use_container_width=True)
-
-                if result.get("iterations_data"):
-                    st.markdown("#### Tabela de Iterações")
-                    df_iter = pd.DataFrame(result["iterations_data"])
-                    df_iter.index = df_iter.index + 1
-                    df_iter.index.name = "Iteração"
-                    st.dataframe(
-                        df_iter.style.format({
-                            "x0": "{:.8f}", "x1": "{:.8f}",
-                            "f0": "{:.2e}", "f1": "{:.2e}", "x2": "{:.8f}"
-                        }),
-                        use_container_width=True
-                    )
-            else:
-                if result.get("iterations_data"):
-                    st.markdown("#### Últimas Iterações")
-                    df_iter = pd.DataFrame(result["iterations_data"])
-                    df_iter.index = df_iter.index + 1
-                    df_iter.index.name = "Iteração"
-                    st.dataframe(
-                        df_iter.style.format({
-                            "x0": "{:.8f}", "x1": "{:.8f}",
-                            "f0": "{:.2e}", "f1": "{:.2e}", "x2": "{:.8f}"
-                        }),
-                        use_container_width=True
-                    )
-        except Exception as e:
-            st.error(f"Erro ao processar entrada: {e}")
+        return children
+    except Exception as e:
+        return dbc.Alert(f"Erro ao processar entrada: {e}", color="danger")

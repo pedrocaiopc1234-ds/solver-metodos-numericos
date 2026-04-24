@@ -1,126 +1,147 @@
 """
-Interpolação Polinomial — Newton e Lagrange
+Interpolação Polinomial — Dash Page
 """
 
-import streamlit as st
+import dash
+from dash import html, dcc, callback, Output, Input, State, dash_table
+import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
 from core.interpolation import newton_interpolation, lagrange_interpolation
 from core.plot import plot_newton_interpolation, plot_lagrange_interpolation
-from utils.ui import show_result_card
 
-st.set_page_config(page_title="Interpolação", page_icon="📈", layout="wide")
+dash.register_page(__name__, path="/interpolacao", title="Interpolação", name="Interpolação")
 
-st.title("📈 Interpolação Polinomial")
+METHODS = [
+    {"label": "Newton (Diferenças Divididas)", "value": "newton"},
+    {"label": "Lagrange", "value": "lagrange"},
+]
 
-method = st.selectbox(
-    "Selecione o método:",
-    ["Newton (Diferenças Divididas)", "Lagrange"],
-    help="Escolha o método de interpolação polinomial"
+layout = dbc.Container([
+    html.H2("📈 Interpolação Polinomial", className="mb-3"),
+    dbc.Card([
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Método"),
+                    dcc.Dropdown(
+                        id="interp-method",
+                        options=METHODS,
+                        value="newton",
+                        clearable=False,
+                    ),
+                ], width=12, md=4),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("x (separados por vírgula)"),
+                    dbc.Input(id="interp-x", type="text", value="1, 2, 3, 4"),
+                ], width=12, md=6),
+                dbc.Col([
+                    dbc.Label("y (separados por vírgula)"),
+                    dbc.Input(id="interp-y", type="text", value="1, 4, 9, 16"),
+                ], width=12, md=6),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("x a avaliar"),
+                    dbc.Input(id="interp-xeval", type="number", value=2.5, step=0.1),
+                ], width=12, md=4),
+            ], className="mb-3"),
+            dbc.Button("▶️ Calcular", id="interp-calc", color="primary", className="mt-2"),
+        ])
+    ], className="mb-4"),
+
+    html.Div(id="interp-output"),
+], fluid=True)
+
+
+@callback(
+    Output("interp-output", "children"),
+    Input("interp-calc", "n_clicks"),
+    State("interp-method", "value"),
+    State("interp-x", "value"),
+    State("interp-y", "value"),
+    State("interp-xeval", "value"),
+    prevent_initial_call=True,
 )
-
-st.markdown("---")
-
-st.markdown("**Pontos de Interpolação**")
-col1, col2 = st.columns(2)
-with col1:
-    x_str = st.text_input("x (separados por vírgula):", value="1, 2, 3, 4")
-with col2:
-    y_str = st.text_input("y (separados por vírgula):", value="1, 4, 9, 16")
-
-x_eval = st.number_input("x a avaliar:", value=2.5, format="%.6f")
-
-if st.button("▶️ Calcular", use_container_width=True):
+def calculate(n_clicks, method, x_str, y_str, x_eval):
+    if n_clicks is None:
+        return dash.no_update
     try:
         x = np.array([float(v.strip()) for v in x_str.split(",")])
         y = np.array([float(v.strip()) for v in y_str.split(",")])
+        x_eval = float(x_eval) if x_eval is not None else 0.0
 
+        children = []
         if len(x) != len(y):
-            st.error("x e y devem ter o mesmo número de elementos.")
-        elif len(x) < 2:
-            st.error("Mínimo de 2 pontos necessários.")
+            return dbc.Alert("x e y devem ter o mesmo número de elementos.", color="danger")
+        if len(x) < 2:
+            return dbc.Alert("Mínimo de 2 pontos necessários.", color="danger")
+
+        pts_df = pd.DataFrame({"x": x, "y": y})
+        children.append(dbc.Card([
+            dbc.CardBody([
+                html.H5("Pontos de Interpolação"),
+                dash_table.DataTable(
+                    data=pts_df.to_dict("records"),
+                    columns=[{"name": c, "id": c} for c in pts_df.columns],
+                    style_table={"overflowX": "auto"},
+                    style_cell={"textAlign": "center"},
+                )
+            ])
+        ], className="mb-3"))
+
+        if method == "newton":
+            result = newton_interpolation(x, y, x_eval)
         else:
-            st.markdown("### Pontos de Interpolação")
-            pts_df = pd.DataFrame({"x": x, "y": y})
-            st.dataframe(pts_df, use_container_width=True)
+            result = lagrange_interpolation(x, y, x_eval)
 
-            if method == "Newton (Diferenças Divididas)":
-                st.markdown("---")
-                st.subheader("📊 Interpolação de Newton")
-                st.markdown(
-                    "A interpolação de Newton utiliza **diferenças divididas** para construir o polinômio "
-                    "de forma incremental, adicionando um termo a cada novo ponto."
-                )
+        if not result.get("success"):
+            children.append(dbc.Alert(result.get("error", "Erro desconhecido"), color="danger"))
+            return children
 
-                result = newton_interpolation(x, y, x_eval)
-                show_result_card(result, "Interpolação")
+        children.append(dbc.Alert("Interpolação realizada com sucesso!", color="success"))
+        children.append(dbc.Row([
+            dbc.Col(dbc.Card([dbc.CardBody([html.H5("P(x) avaliado"), html.P(f"{result['result']:.6f}")])]), width=4),
+            dbc.Col(dbc.Card([dbc.CardBody([html.H5("Grau do polinômio"), html.P(str(len(x) - 1))])]), width=4),
+            dbc.Col(dbc.Card([dbc.CardBody([html.H5("x avaliado"), html.P(f"{x_eval:.4f}")])]), width=4),
+        ], className="mb-3"))
 
-                if result["success"]:
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("P(x) avaliado", f"{result['result']:.6f}")
-                    c2.metric("Grau do polinômio", len(x) - 1)
-                    c3.metric("x avaliado", f"{x_eval:.4f}")
+        if method == "newton":
+            fig, info = plot_newton_interpolation(x, y, result.get("coefficients"), x_eval=x_eval, y_eval=result["result"])
+        else:
+            fig, info = plot_lagrange_interpolation(x, y, x_eval=x_eval, y_eval=result["result"])
 
-                    fig, info = plot_newton_interpolation(
-                        x, y, result["coefficients"],
-                        x_eval=x_eval, y_eval=result["result"]
-                    )
+        children.append(dbc.Card([
+            dbc.CardBody([
+                html.H5("Gráfico do Polinômio Interpolador"),
+                dcc.Graph(figure=fig),
+            ])
+        ], className="mb-3"))
 
-                    st.markdown("#### Gráfico do Polinômio Interpolador")
-                    st.plotly_chart(fig, use_container_width=True)
+        info_children = [
+            html.P(f"Base: {info['basis']}"),
+            html.P(f"Forma: {info['form']}"),
+            html.P(f"Grau: {info['degree']}"),
+        ]
+        if "coefficients" in info:
+            info_children.append(html.P("Coeficientes (c₀, c₁, ...):"))
+            for i, c in enumerate(info["coefficients"]):
+                info_children.append(html.P(f"c{i} = {c:.6g}"))
+        if "basis_strings" in info:
+            info_children.append(html.P("Polinômios base Lᵢ(x):"))
+            for s in info["basis_strings"]:
+                info_children.append(html.P(f"{s}"))
+        info_children.append(html.Pre(info["polynomial_string"], className="bg-dark p-2 rounded"))
 
-                    st.markdown("#### Informações do Polinômio")
-                    info_col1, info_col2 = st.columns(2)
-                    with info_col1:
-                        st.markdown(f"**Base:** {info['basis']}")
-                        st.markdown(f"**Forma:** `{info['form']}`")
-                        st.markdown(f"**Grau:** {info['degree']}")
-                    with info_col2:
-                        st.markdown(f"**Coeficientes (c₀, c₁, ...):**")
-                        coeffs = info["coefficients"]
-                        for i, c in enumerate(coeffs):
-                            st.markdown(f"- c{i} = `{c:.6g}`")
+        children.append(dbc.Card([
+            dbc.CardBody([
+                html.H5("Informações do Polinômio"),
+                html.Div(info_children),
+            ])
+        ], className="mb-3"))
 
-                    st.markdown("**Polinômio expandido:**")
-                    st.code(info["polynomial_string"], language="text")
-
-            else:
-                st.markdown("---")
-                st.subheader("📊 Interpolação de Lagrange")
-                st.markdown(
-                    "A interpolação de Lagrange constrói o polinômio como uma combinação linear de "
-                    "**polinômios base** Lᵢ(x), cada um valendo 1 em xᵢ e 0 nos outros nós."
-                )
-
-                result = lagrange_interpolation(x, y, x_eval)
-                show_result_card(result, "Interpolação")
-
-                if result["success"]:
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("P(x) avaliado", f"{result['result']:.6f}")
-                    c2.metric("Grau do polinômio", len(x) - 1)
-                    c3.metric("x avaliado", f"{x_eval:.4f}")
-
-                    fig, info = plot_lagrange_interpolation(
-                        x, y, x_eval=x_eval, y_eval=result["result"]
-                    )
-
-                    st.markdown("#### Gráfico do Polinômio Interpolador")
-                    st.plotly_chart(fig, use_container_width=True)
-
-                    st.markdown("#### Informações do Polinômio")
-                    info_col1, info_col2 = st.columns(2)
-                    with info_col1:
-                        st.markdown(f"**Base:** {info['basis']}")
-                        st.markdown(f"**Forma:** `{info['form']}`")
-                        st.markdown(f"**Grau:** {info['degree']}")
-                    with info_col2:
-                        st.markdown("**Polinômios base Lᵢ(x):**")
-                        for s in info["basis_strings"]:
-                            st.markdown(f"- `{s}`")
-
-                    st.markdown("**Polinômio expandido:**")
-                    st.code(info["polynomial_string"], language="text")
-
+        return children
     except Exception as e:
-        st.error(f"Erro ao processar entrada: {e}")
+        return dbc.Alert(f"Erro ao processar entrada: {e}", color="danger")

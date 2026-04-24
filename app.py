@@ -1,77 +1,52 @@
 """
-Numerical Methods Solver — Streamlit App
-======================================
-Run with: streamlit run app.py
+Numerical Methods Solver — Dash App
+===================================
+Run with: python app.py
 """
 
-import streamlit as st
+import dash
+import dash_bootstrap_components as dbc
+from dash import html, dcc
 
-st.set_page_config(
-    page_title="Solver de Métodos Numéricos",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded",
+app = dash.Dash(
+    __name__,
+    use_pages=True,
+    external_stylesheets=[dbc.themes.DARKLY, dbc.icons.FONT_AWESOME],
+    suppress_callback_exceptions=True,
 )
 
-st.title("📊 Solver de Métodos Numéricos")
-st.markdown("---")
+navbar = dbc.NavbarSimple(
+    children=[
+        dbc.NavItem(dbc.NavLink("Início", href="/")),
+        dbc.NavItem(dbc.NavLink("Raízes", href="/raizes")),
+        dbc.NavItem(dbc.NavLink("Sistemas Lineares", href="/sistemas-lineares")),
+        dbc.NavItem(dbc.NavLink("Interpolação", href="/interpolacao")),
+        dbc.NavItem(dbc.NavLink("Integração", href="/integracao")),
+        dbc.NavItem(dbc.NavLink("EDOs", href="/edos")),
+    ],
+    brand="Solver de Métodos Numéricos",
+    brand_href="/",
+    color="primary",
+    dark=True,
+    fluid=True,
+    className="mb-4",
+)
 
-cols = st.columns(3)
+app.layout = dbc.Container(
+    [
+        navbar,
+        dash.page_container,
+        html.Hr(),
+        html.Footer(
+            dbc.Container(
+                html.P("Solver de Métodos Numéricos — Dash + Plotly", className="text-center text-muted"),
+                fluid=True,
+            )
+        ),
+    ],
+    fluid=True,
+    className="dbc",
+)
 
-with cols[0]:
-    st.markdown("""
-    ### 🎯 Raízes
-    Encontre zeros de funções reais com:
-    - **Bissecção**
-    - **Newton-Raphson**
-    - **Secante**
-    """)
-
-with cols[1]:
-    st.markdown("""
-    ### 📐 Sistemas Lineares
-    Resolva sistemas Ax = b com:
-    - **Fatoração LU**
-    - **Eliminação de Gauss**
-    - **Gauss-Seidel** (iterativo)
-    - **Gauss-Jacobi** (iterativo)
-    """)
-
-with cols[2]:
-    st.markdown("""
-    ### 📈 Interpolação
-    Aproxime funções por polinômios com:
-    - **Newton** (diferenças divididas)
-    - **Lagrange** (polinômios base)
-    """)
-
-cols2 = st.columns(3)
-
-with cols2[0]:
-    st.markdown("""
-    ### 📉 Integração
-    Calcule integrais definidas com:
-    - **Simpson 1/3**
-    - **Trapézio Repetido**
-    - **Simpson 3/8**
-    """)
-
-with cols2[1]:
-    st.markdown("""
-    ### 🌊 EDOs
-    Resolva equações diferenciais com:
-    - **Euler**
-    - **Runge-Kutta 4ª ordem**
-    """)
-
-with cols2[2]:
-    st.markdown("""
-    ### ✨ Recursos
-    - Visualizações interativas com **Plotly**
-    - Tabelas de iterações detalhadas
-    - Informações sobre polinômios interpoladores
-    - Gráficos de convergência e áreas
-    """)
-
-st.markdown("---")
-st.info("👈 Selecione um método no menu lateral para começar.")
+if __name__ == "__main__":
+    app.run(debug=True)

@@ -1,144 +1,156 @@
 """
-Sistemas Lineares — LU, Gauss, Gauss-Seidel, Gauss-Jacobi
+Sistemas Lineares — Dash Page
 """
 
-import streamlit as st
+import dash
+from dash import html, dcc, callback, Output, Input, State, dash_table
+import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
 from core.linear_systems import lu_factorization, gaussian_elimination, gauss_seidel, gauss_jacobi
-from utils.ui import display_matrix, show_result_card
+from utils.dash_ui import display_matrix
 
-st.set_page_config(page_title="Sistemas Lineares", page_icon="📐", layout="wide")
+dash.register_page(__name__, path="/sistemas-lineares", title="Sistemas Lineares", name="Sistemas Lineares")
 
-st.title("📐 Sistemas Lineares")
+METHODS = [
+    {"label": "Fatoração LU", "value": "lu"},
+    {"label": "Eliminação de Gauss", "value": "gauss"},
+    {"label": "Gauss-Seidel", "value": "gauss_seidel"},
+    {"label": "Gauss-Jacobi", "value": "gauss_jacobi"},
+]
 
-method = st.selectbox(
-    "Selecione o método:",
-    ["Fatoração LU", "Eliminação de Gauss", "Gauss-Seidel", "Gauss-Jacobi"],
-    help="Escolha o método para resolver Ax = b"
+layout = dbc.Container([
+    html.H2("📐 Sistemas Lineares", className="mb-3"),
+    dbc.Card([
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Método"),
+                    dcc.Dropdown(
+                        id="ls-method",
+                        options=METHODS,
+                        value="lu",
+                        clearable=False,
+                    ),
+                ], width=12, md=4),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Matriz A (linhas separadas por vírgula ou ponto e vírgula)"),
+                    dbc.Textarea(id="ls-A", value="4, 1, 2\n1, 3, 1\n2, 1, 5", rows=4),
+                ], width=12, md=6),
+                dbc.Col([
+                    dbc.Label("Vetor b (valores separados por vírgula)"),
+                    dbc.Input(id="ls-b", type="text", value="4, 3, 7"),
+                ], width=12, md=6),
+            ], className="mb-3"),
+            html.Div(id="ls-iter-container", children=[
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Label("Tolerância"),
+                        dbc.Input(id="ls-tol", type="number", value=1e-10, step=1e-11),
+                    ], width=6, md=3),
+                    dbc.Col([
+                        dbc.Label("Máximo de iterações"),
+                        dbc.Input(id="ls-max-iter", type="number", value=100, step=10),
+                    ], width=6, md=3),
+                ], className="mb-3"),
+            ]),
+            dbc.Button("▶️ Calcular", id="ls-calc", color="primary", className="mt-2"),
+        ])
+    ], className="mb-4"),
+
+    html.Div(id="ls-output"),
+], fluid=True)
+
+
+@callback(
+    Output("ls-iter-container", "style"),
+    Input("ls-method", "value"),
 )
+def toggle_iter(method):
+    return {"display": "block"} if method in ("gauss_seidel", "gauss_jacobi") else {"display": "none"}
 
-st.markdown("---")
 
-st.markdown("**Entrada da Matriz A e Vetor b**")
-A_str = st.text_area(
-    "Matriz A (linhas separadas por `;`, valores por `,`):",
-    value="4, 1, 2\n1, 3, 1\n2, 1, 5",
-    height=120,
-    help="Exemplo para matriz 3x3: `4, 1, 2; 1, 3, 1; 2, 1, 5`"
+@callback(
+    Output("ls-output", "children"),
+    Input("ls-calc", "n_clicks"),
+    State("ls-method", "value"),
+    State("ls-A", "value"),
+    State("ls-b", "value"),
+    State("ls-tol", "value"),
+    State("ls-max-iter", "value"),
+    prevent_initial_call=True,
 )
-b_str = st.text_input("Vetor b (valores separados por `,`):", value="4, 3, 7")
-
-if method in ["Gauss-Seidel", "Gauss-Jacobi"]:
-    col_iter = st.columns(3)
-    with col_iter[0]:
-        tol = st.number_input("Tolerância:", value=1e-10, format="%.2e")
-    with col_iter[1]:
-        max_iter = st.number_input("Máximo de iterações:", value=100, step=10)
-else:
-    tol = 1e-10
-    max_iter = 100
-
-if st.button("▶️ Calcular", use_container_width=True):
+def calculate(n_clicks, method, A_str, b_str, tol, max_iter):
+    if n_clicks is None:
+        return dash.no_update
     try:
         A = np.array([[float(x.strip()) for x in row.split(",")] for row in A_str.strip().splitlines() if row.strip()])
         b = np.array([float(x.strip()) for x in b_str.split(",")])
+        tol = float(tol) if tol is not None else 1e-10
+        max_iter = int(max_iter) if max_iter is not None else 100
 
-        st.markdown("### Entrada Validada")
-        c1, c2 = st.columns(2)
-        with c1:
-            display_matrix(A, "Matriz A")
-        with c2:
-            display_matrix(b.reshape(-1, 1), "Vetor b")
+        children = []
+        children.append(html.H5("Entrada Validada"))
+        df_A = display_matrix(A, "A")
+        df_b = display_matrix(b.reshape(-1, 1), "b")
+        children.append(dbc.Row([
+            dbc.Col(dbc.Card([dbc.CardBody([html.H6("Matriz A"), dash_table.DataTable(data=df_A.to_dict("records"), columns=[{"name": c, "id": c} for c in df_A.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"})])]), width=6),
+            dbc.Col(dbc.Card([dbc.CardBody([html.H6("Vetor b"), dash_table.DataTable(data=df_b.to_dict("records"), columns=[{"name": c, "id": c} for c in df_b.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"})])]), width=6),
+        ], className="mb-3"))
 
-        if method == "Fatoração LU":
-            st.markdown("---")
-            st.subheader("🔢 Fatoração LU com Pivotamento Parcial")
-            st.markdown(
-                "Decompõe a matriz A em A = LU, onde L é triangular inferior e U é triangular superior. "
-                "Em seguida, resolve o sistema por substituição."
-            )
+        if method == "lu":
             result = lu_factorization(A, b)
-            show_result_card(result, "Solução")
-
-            if result["success"]:
-                c1, c2 = st.columns(2)
-                with c1:
-                    display_matrix(result["L"], "Matriz L (inferior)")
-                with c2:
-                    display_matrix(result["U"], "Matriz U (superior)")
-
-                st.markdown("**Solução x:**")
-                display_matrix(result["x"].reshape(-1, 1), "x")
-
-                st.markdown("**Verificação (A @ x):**")
-                Ax = np.dot(A, result["x"])
-                display_matrix(Ax.reshape(-1, 1), "A · x")
-                st.markdown(f"**Erro ||Ax - b||₂:** {np.linalg.norm(Ax - b):.2e}")
-
-        elif method == "Eliminação de Gauss":
-            st.markdown("---")
-            st.subheader("🔢 Eliminação de Gauss com Pivotamento Parcial")
-            st.markdown(
-                "Transforma a matriz aumentada [A|b] em uma forma triangular superior por operações elementares, "
-                "e depois resolve por retrosubstituição."
-            )
+        elif method == "gauss":
             result = gaussian_elimination(A, b)
-            show_result_card(result, "Solução")
-
-            if result["success"]:
-                display_matrix(result["x"].reshape(-1, 1), "Solução x")
-
-                st.markdown("**Verificação (A @ x):**")
-                Ax = np.dot(A, result["x"])
-                display_matrix(Ax.reshape(-1, 1), "A · x")
-                st.markdown(f"**Erro ||Ax - b||₂:** {np.linalg.norm(Ax - b):.2e}")
-
-        elif method == "Gauss-Seidel":
-            st.markdown("---")
-            st.subheader("🔁 Gauss-Seidel (Método Iterativo)")
-            st.markdown(
-                "Atualiza cada componente de x usando os valores **já atualizados** da iteração corrente. "
-                "Converge se A for diagonalmente dominante ou simétrica definida positiva."
-            )
+        elif method == "gauss_seidel":
             result = gauss_seidel(A, b, tol=tol, max_iter=max_iter)
-            show_result_card(result, "Solução")
-
-            if result["success"]:
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Iterações", result["iterations"])
-                c2.metric("Tolerância", f"{tol:.2e}")
-                c3.metric("Convergiu", "Sim ✅")
-
-                display_matrix(result["x"].reshape(-1, 1), "Solução x")
-
-                st.markdown("**Verificação (A @ x):**")
-                Ax = np.dot(A, result["x"])
-                display_matrix(Ax.reshape(-1, 1), "A · x")
-                st.markdown(f"**Erro ||Ax - b||₂:** {np.linalg.norm(Ax - b):.2e}")
-
         else:
-            st.markdown("---")
-            st.subheader("🔁 Gauss-Jacobi (Método Iterativo)")
-            st.markdown(
-                "Atualiza cada componente de x usando os valores **da iteração anterior**. "
-                "Converge se A for diagonalmente dominante."
-            )
             result = gauss_jacobi(A, b, tol=tol, max_iter=max_iter)
-            show_result_card(result, "Solução")
 
-            if result["success"]:
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Iterações", result["iterations"])
-                c2.metric("Tolerância", f"{tol:.2e}")
-                c3.metric("Convergiu", "Sim ✅")
+        if not result.get("success"):
+            children.append(dbc.Alert(result.get("error", "Erro desconhecido"), color="danger"))
+            return children
 
-                display_matrix(result["x"].reshape(-1, 1), "Solução x")
+        children.append(dbc.Alert("Solução encontrada com sucesso!", color="success"))
 
-                st.markdown("**Verificação (A @ x):**")
-                Ax = np.dot(A, result["x"])
-                display_matrix(Ax.reshape(-1, 1), "A · x")
-                st.markdown(f"**Erro ||Ax - b||₂:** {np.linalg.norm(Ax - b):.2e}")
+        if method in ("gauss_seidel", "gauss_jacobi"):
+            children.append(dbc.Row([
+                dbc.Col(dbc.Card([dbc.CardBody([html.H5("Iterações"), html.P(str(result.get("iterations", 0)))])]), width=4),
+                dbc.Col(dbc.Card([dbc.CardBody([html.H5("Tolerância"), html.P(f"{tol:.2e}")])]), width=4),
+                dbc.Col(dbc.Card([dbc.CardBody([html.H5("Convergiu"), html.P("Sim ✅")])]), width=4),
+            ], className="mb-3"))
 
+        if method == "lu" and "L" in result and "U" in result:
+            df_L = display_matrix(result["L"], "L")
+            df_U = display_matrix(result["U"], "U")
+            children.append(dbc.Row([
+                dbc.Col(dbc.Card([dbc.CardBody([html.H6("Matriz L"), dash_table.DataTable(data=df_L.to_dict("records"), columns=[{"name": c, "id": c} for c in df_L.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"})])]), width=6),
+                dbc.Col(dbc.Card([dbc.CardBody([html.H6("Matriz U"), dash_table.DataTable(data=df_U.to_dict("records"), columns=[{"name": c, "id": c} for c in df_U.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"})])]), width=6),
+            ], className="mb-3"))
+
+        x = result.get("x")
+        if x is not None:
+            x = np.array(x)
+            df_x = display_matrix(x.reshape(-1, 1), "x")
+            children.append(dbc.Card([
+                dbc.CardBody([
+                    html.H5("Solução x"),
+                    dash_table.DataTable(data=df_x.to_dict("records"), columns=[{"name": c, "id": c} for c in df_x.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"}),
+                ])
+            ], className="mb-3"))
+            Ax = np.dot(A, x)
+            err = np.linalg.norm(Ax - b)
+            df_Ax = display_matrix(Ax.reshape(-1, 1), "A·x")
+            children.append(dbc.Card([
+                dbc.CardBody([
+                    html.H5("Verificação A·x"),
+                    dash_table.DataTable(data=df_Ax.to_dict("records"), columns=[{"name": c, "id": c} for c in df_Ax.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"}),
+                    html.P(f"Erro ||Ax - b||₂: {err:.2e}"),
+                ])
+            ], className="mb-3"))
+
+        return children
     except Exception as e:
-        st.error(f"Erro ao processar entrada: {e}")
+        return dbc.Alert(f"Erro ao processar entrada: {e}", color="danger")

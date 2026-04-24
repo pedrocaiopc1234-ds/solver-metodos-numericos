@@ -1,99 +1,129 @@
 """
-Integração Numérica — Simpson 1/3, Trapézio Repetido, Simpson 3/8
+Integração Numérica — Dash Page
 """
 
-import streamlit as st
+import dash
+from dash import html, dcc, callback, Output, Input, State
+import dash_bootstrap_components as dbc
 import numpy as np
 from core.integration import simpson, trapezoidal_repeated, three_eight_method
 from core.plot import plot_simpson, plot_trapezoidal, plot_three_eight
-from utils.ui import parse_function, show_result_card
+from utils.dash_ui import parse_function
 
-st.set_page_config(page_title="Integração", page_icon="📉", layout="wide")
+dash.register_page(__name__, path="/integracao", title="Integração", name="Integração")
 
-st.title("📉 Integração Numérica")
+METHODS = [
+    {"label": "Simpson 1/3", "value": "simpson"},
+    {"label": "Trapézio Repetido", "value": "trapezoidal"},
+    {"label": "Simpson 3/8", "value": "three_eight"},
+]
 
-method = st.selectbox(
-    "Selecione o método:",
-    ["Simpson 1/3", "Trapézio Repetido", "Simpson 3/8"],
-    help="Escolha o método para calcular integrais definidas"
+layout = dbc.Container([
+    html.H2("📉 Integração Numérica", className="mb-3"),
+    dbc.Card([
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Método"),
+                    dcc.Dropdown(
+                        id="int-method",
+                        options=METHODS,
+                        value="simpson",
+                        clearable=False,
+                    ),
+                ], width=12, md=4),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("f(x) ="),
+                    dbc.Input(id="int-f", type="text", value="x**2"),
+                ], width=12, md=4),
+                dbc.Col([
+                    dbc.Label("a (limite inferior)"),
+                    dbc.Input(id="int-a", type="number", value=0.0, step=0.1),
+                ], width=6, md=4),
+                dbc.Col([
+                    dbc.Label("b (limite superior)"),
+                    dbc.Input(id="int-b", type="number", value=2.0, step=0.1),
+                ], width=6, md=4),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("n (subintervalos)"),
+                    dbc.Input(id="int-n", type="number", value=4, step=1),
+                ], width=12, md=4),
+            ], className="mb-3"),
+            html.Div(id="int-n-warning"),
+            dbc.Button("▶️ Calcular", id="int-calc", color="primary", className="mt-2"),
+        ])
+    ], className="mb-4"),
+
+    html.Div(id="int-output"),
+], fluid=True)
+
+
+@callback(
+    Output("int-n-warning", "children"),
+    Output("int-n", "disabled"),
+    Input("int-method", "value"),
+    State("int-n", "value"),
 )
+def update_n_warning(method, n):
+    if method == "three_eight":
+        return dbc.Alert("Simpson 3/8 usa n = 3 fixo.", color="info"), True
+    if method == "simpson" and n is not None and int(n) % 2 != 0:
+        return dbc.Alert("Para Simpson 1/3, n deve ser par. O cálculo irá falhar se n for ímpar.", color="warning"), False
+    return None, False
 
-st.markdown("---")
 
-col1, col2 = st.columns(2)
-with col1:
-    f_str = st.text_input("f(x) =", value="x**2", help="Função a integrar.")
-    a = st.number_input("a (limite inferior):", value=0.0, format="%.6f")
-with col2:
-    b = st.number_input("b (limite superior):", value=2.0, format="%.6f")
-
-if method in ["Simpson 1/3", "Trapézio Repetido"]:
-    n = st.number_input("n (número de subintervalos):", value=4, step=2 if method == "Simpson 1/3" else 1)
-    if method == "Simpson 1/3" and int(n) % 2 != 0:
-        st.warning("Para Simpson 1/3, n deve ser par. O cálculo irá falhar se n for ímpar.")
-else:
-    n = 3
-
-if st.button("▶️ Calcular", use_container_width=True):
+@callback(
+    Output("int-output", "children"),
+    Input("int-calc", "n_clicks"),
+    State("int-method", "value"),
+    State("int-f", "value"),
+    State("int-a", "value"),
+    State("int-b", "value"),
+    State("int-n", "value"),
+    prevent_initial_call=True,
+)
+def calculate(n_clicks, method, f_str, a, b, n):
+    if n_clicks is None:
+        return dash.no_update
     try:
-        f = parse_function(f_str)
+        f = parse_function(f_str or "x")
+        a = float(a) if a is not None else 0.0
+        b = float(b) if b is not None else 0.0
+        n = int(n) if n is not None else 4
 
-        if method == "Simpson 1/3":
-            st.markdown("---")
-            st.subheader("🔷 Regra de Simpson 1/3")
-            st.markdown(
-                "Aproxima a integral usando arcos parabólicos sobre pares de subintervalos. "
-                "**Fórmula:** ∫f(x)dx ≈ h/3 · [f(x₀) + 4Σf(xᵢmpar) + 2Σf(xᵢpar) + f(xₙ)]"
-            )
-            result = simpson(f, a, b, int(n))
-            show_result_card(result, "Integral")
-
-            if result["success"]:
-                c1, c2 = st.columns(2)
-                c1.metric("Integral aproximada", f"{result['result']:.10f}")
-                c2.metric("n (subintervalos)", int(n))
-
-                st.markdown("#### Gráfico com Áreas Parabólicas")
-                fig = plot_simpson(f, a, b, int(n), result["result"])
-                st.plotly_chart(fig, use_container_width=True)
-
-        elif method == "Trapézio Repetido":
-            st.markdown("---")
-            st.subheader("🔶 Regra do Trapézio Repetido")
-            st.markdown(
-                "Aproxima a integral somando as áreas de trapézios formados entre pontos consecutivos. "
-                "**Fórmula:** ∫f(x)dx ≈ h · [f(x₀)/2 + Σf(xᵢ) + f(xₙ)/2]"
-            )
-            result = trapezoidal_repeated(f, a, b, int(n))
-            show_result_card(result, "Integral")
-
-            if result["success"]:
-                c1, c2 = st.columns(2)
-                c1.metric("Integral aproximada", f"{result['result']:.10f}")
-                c2.metric("n (subintervalos)", int(n))
-
-                st.markdown("#### Gráfico com Trapézios")
-                fig = plot_trapezoidal(f, a, b, int(n), result["result"])
-                st.plotly_chart(fig, use_container_width=True)
-
+        if method == "simpson":
+            result = simpson(f, a, b, n)
+            fig = plot_simpson(f, a, b, n, result["result"]) if result.get("success") else None
+        elif method == "trapezoidal":
+            result = trapezoidal_repeated(f, a, b, n)
+            fig = plot_trapezoidal(f, a, b, n, result["result"]) if result.get("success") else None
         else:
-            st.markdown("---")
-            st.subheader("🔸 Regra de Simpson 3/8")
-            st.markdown(
-                "Aproxima a integral usando polinômios cúbicos sobre 3 subintervalos (4 pontos). "
-                "**Fórmula:** ∫f(x)dx ≈ 3h/8 · [f(x₀) + 3f(x₁) + 3f(x₂) + f(x₃)]"
-            )
             result = three_eight_method(f, a, b)
-            show_result_card(result, "Integral")
+            fig = plot_three_eight(f, a, b, result["result"]) if result.get("success") else None
 
-            if result["success"]:
-                c1, c2 = st.columns(2)
-                c1.metric("Integral aproximada", f"{result['result']:.10f}")
-                c2.metric("n (subintervalos)", 3)
+        children = []
+        if not result.get("success"):
+            children.append(dbc.Alert(result.get("error", "Erro desconhecido"), color="danger"))
+            return children
 
-                st.markdown("#### Gráfico com Área Cúbica")
-                fig = plot_three_eight(f, a, b, result["result"])
-                st.plotly_chart(fig, use_container_width=True)
+        children.append(dbc.Alert("Integral calculada com sucesso!", color="success"))
+        n_used = 3 if method == "three_eight" else n
+        children.append(dbc.Row([
+            dbc.Col(dbc.Card([dbc.CardBody([html.H5("Integral aproximada"), html.P(f"{result['result']:.10f}")])]), width=6),
+            dbc.Col(dbc.Card([dbc.CardBody([html.H5("n (subintervalos)"), html.P(str(n_used))])]), width=6),
+        ], className="mb-3"))
 
+        if fig:
+            children.append(dbc.Card([
+                dbc.CardBody([
+                    dcc.Graph(figure=fig),
+                ])
+            ], className="mb-3"))
+
+        return children
     except Exception as e:
-        st.error(f"Erro ao processar entrada: {e}")
+        return dbc.Alert(f"Erro ao processar entrada: {e}", color="danger")

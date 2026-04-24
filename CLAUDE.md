@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Projeto
 
-Solver de métodos numéricos com interface Streamlit + PyWebview para desktop.
+Solver de métodos numéricos com interface Dash + Plotly para desktop e web.
 
 ## Ambiente
 
 Use o venv local (`venv/`) para desenvolvimento:
 ```bash
-venv\Scripts\python.exe -m streamlit run app.py
+venv\Scripts\python.exe app.py
 ```
 
 ## Executar Testes
@@ -38,9 +38,11 @@ core/               # Implementação dos métodos numéricos
 validation/         # Validação de inputs (parcialmente implementado)
 
 utils/              # Utilitários compartilhados
-  ui.py             # parse_function, parse_function_2d, display_matrix, plot_ode_solution
+  ui.py             # parse_function, parse_function_2d, display_matrix, plot_ode_solution (legado Streamlit)
+  dash_ui.py        # parse_function, parse_function_2d, display_matrix, plot_ode_solution (Dash)
 
-pages/              # Páginas Streamlit (multipage app, implementado)
+pages/              # Páginas Dash (multipage app com dash.register_page)
+  home.py           # Landing page
   1_raizes.py
   2_sistemas_lineares.py
   3_interpolacao.py
@@ -87,12 +89,12 @@ O módulo `core/plot.py` contém funções Plotly para gerar gráficos interativ
 
 ## UI e Parsing de Funções
 
-`utils/ui.py` define `SAFE_GLOBALS` e funções `parse_function(expr_str)` / `parse_function_2d(expr_str)` para converter strings de expressões matemáticas em lambdas seguros. Todas as páginas Streamlit usam essas funções para ler `f(x)` e `f(t, y)` do usuário.
+`utils/dash_ui.py` define `SAFE_GLOBALS` e funções `parse_function(expr_str)` / `parse_function_2d(expr_str)` para converter strings de expressões matemáticas em lambdas seguros. Todas as páginas Dash usam essas funções para ler `f(x)` e `f(t, y)` do usuário.
 
 ## Fluxo de Dados
 
 ```
-Usuário → Streamlit Page → parse_function → Core Method → Resultado → UI + Plotly
+Usuário → Dash Page → parse_function → Core Method → Resultado → UI + Plotly
 ```
 
 ## Próximos Arquivos a Criar
@@ -111,7 +113,7 @@ Usuário → Streamlit Page → parse_function → Core Method → Resultado →
 
 | Camada | Responsabilidade | Arquivos |
 |--------|-----------------|----------|
-| **UI (Streamlit)** | Interface com usuário, formulários, exibição de resultados | `app.py`, `pages/` |
+| **UI (Dash)** | Interface com usuário, formulários, exibição de resultados | `app.py`, `pages/` |
 | **Core (Lógica)** | Implementação dos métodos numéricos | `core/*.py` |
 | **Validation** | Validação de inputs antes do cálculo | `validation/*.py` |
 | **Tests** | Verificar corretude das implementações | `tests/test.py` |
@@ -119,7 +121,7 @@ Usuário → Streamlit Page → parse_function → Core Method → Resultado →
 ### Fluxo de Dados
 
 ```
-Usuário → Streamlit Page → Validation → Core Method → Resultado → UI
+Usuário → Dash Page → Validation → Core Method → Resultado → UI
 ```
 
 ### Métodos por Arquivo Core
@@ -148,8 +150,8 @@ Executar o método e, quando ocorrer erro (divisão por zero, overflow, etc.), c
 2. Implementar `core/` — métodos numéricos
 3. Implementar `validation/` — validações de inputs
 4. Criar `test.py` e validar cada método do core
-5. Desenvolver interface Streamlit (`app.py` + `pages/`)
-6. Configurar PyWebview para desktop
+5. Desenvolver interface Dash (`app.py` + `pages/`)
+6. Configurar PyWebview para desktop (opcional)
 7. Documentar no README
 
 ## Versionamento no GitHub

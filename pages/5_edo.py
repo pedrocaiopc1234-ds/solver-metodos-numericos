@@ -1,86 +1,131 @@
 """
-EDOs — Euler e Runge-Kutta 4ª Ordem
+EDOs — Euler e Runge-Kutta 4ª Ordem — Dash Page
 """
 
-import streamlit as st
+import dash
+from dash import html, dcc, callback, Output, Input, State, dash_table
+import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
 from core.ode import euler_method, runge_kutta_4
-from utils.ui import parse_function_2d, show_result_card, plot_ode_solution
+from utils.dash_ui import parse_function_2d, plot_ode_solution
 
-st.set_page_config(page_title="EDOs", page_icon="🌊", layout="wide")
+dash.register_page(__name__, path="/edos", title="EDOs", name="EDOs")
 
-st.title("🌊 Equações Diferenciais Ordinárias")
+METHODS = [
+    {"label": "Euler", "value": "euler"},
+    {"label": "Runge-Kutta 4ª Ordem", "value": "rk4"},
+]
 
-method = st.selectbox(
-    "Selecione o método:",
-    ["Euler", "Runge-Kutta 4ª Ordem"],
-    help="Escolha o método para resolver dy/dt = f(t, y)"
+layout = dbc.Container([
+    html.H2("🌊 Equações Diferenciais Ordinárias", className="mb-3"),
+    dbc.Card([
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("Método"),
+                    dcc.Dropdown(
+                        id="ode-method",
+                        options=METHODS,
+                        value="euler",
+                        clearable=False,
+                    ),
+                ], width=12, md=4),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("f(t, y) ="),
+                    dbc.Input(id="ode-f", type="text", value="y"),
+                ], width=12, md=6),
+                dbc.Col([
+                    dbc.Label("y(0) ="),
+                    dbc.Input(id="ode-y0", type="number", value=1.0, step=0.1),
+                ], width=6, md=3),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Label("t₀"),
+                    dbc.Input(id="ode-t0", type="number", value=0.0, step=0.1),
+                ], width=4, md=3),
+                dbc.Col([
+                    dbc.Label("t_final"),
+                    dbc.Input(id="ode-tf", type="number", value=1.0, step=0.1),
+                ], width=4, md=3),
+                dbc.Col([
+                    dbc.Label("Passo h"),
+                    dbc.Input(id="ode-h", type="number", value=0.1, step=0.01),
+                ], width=4, md=3),
+            ], className="mb-3"),
+            dbc.Button("▶️ Calcular", id="ode-calc", color="primary", className="mt-2"),
+        ])
+    ], className="mb-4"),
+
+    html.Div(id="ode-output"),
+], fluid=True)
+
+
+@callback(
+    Output("ode-output", "children"),
+    Input("ode-calc", "n_clicks"),
+    State("ode-method", "value"),
+    State("ode-f", "value"),
+    State("ode-y0", "value"),
+    State("ode-t0", "value"),
+    State("ode-tf", "value"),
+    State("ode-h", "value"),
+    prevent_initial_call=True,
 )
-
-st.markdown("---")
-
-col1, col2 = st.columns(2)
-with col1:
-    f_str = st.text_input("f(t, y) =", value="y", help="Use `t` e `y` como variáveis.")
-    y0 = st.number_input("y(0) =", value=1.0, format="%.6f")
-with col2:
-    t0 = st.number_input("t₀:", value=0.0, format="%.6f")
-    tf = st.number_input("t_final:", value=1.0, format="%.6f")
-
-h = st.number_input("Passo h:", value=0.1, format="%.4f")
-
-if st.button("▶️ Calcular", use_container_width=True):
+def calculate(n_clicks, method, f_str, y0, t0, tf, h):
+    if n_clicks is None:
+        return dash.no_update
     try:
-        f = parse_function_2d(f_str)
+        f = parse_function_2d(f_str or "y")
+        y0 = float(y0) if y0 is not None else 1.0
+        t0 = float(t0) if t0 is not None else 0.0
+        tf = float(tf) if tf is not None else 1.0
+        h = float(h) if h is not None else 0.1
 
-        if method == "Euler":
-            st.markdown("---")
-            st.subheader("📉 Método de Euler")
-            st.markdown(
-                "Aproximação de primeira ordem: yₙ₊₁ = yₙ + h · f(tₙ, yₙ). "
-                "Simples, mas pode acumular erro para passos grandes."
-            )
+        if method == "euler":
             result = euler_method(f, y0, t0, tf, h)
-            show_result_card(result, "Solução")
-
-            if result["success"]:
-                c1, c2, c3 = st.columns(3)
-                c1.metric("y(t_final)", f"{result['y'][-1]:.6f}")
-                c2.metric("Passos", len(result["t"]))
-                c3.metric("Passo h", f"{h:.4f}")
-
-                st.markdown("#### Gráfico da Solução")
-                fig = plot_ode_solution(result["t"], result["y"], "Euler")
-                st.plotly_chart(fig, use_container_width=True)
-
-                st.markdown("#### Tabela de Valores")
-                df = pd.DataFrame({"t": result["t"], "y": result["y"]})
-                st.dataframe(df.style.format({"t": "{:.4f}", "y": "{:.6f}"}), use_container_width=True)
-
         else:
-            st.markdown("---")
-            st.subheader("🚀 Runge-Kutta 4ª Ordem")
-            st.markdown(
-                "Método de quarta ordem que combina 4 avaliações de f por passo para alta precisão: "
-                "yₙ₊₁ = yₙ + h/6 · (k₁ + 2k₂ + 2k₃ + k₄)."
-            )
             result = runge_kutta_4(f, y0, t0, tf, h)
-            show_result_card(result, "Solução")
 
-            if result["success"]:
-                c1, c2, c3 = st.columns(3)
-                c1.metric("y(t_final)", f"{result['y'][-1]:.6f}")
-                c2.metric("Passos", len(result["t"]))
-                c3.metric("Passo h", f"{h:.4f}")
+        children = []
+        if not result.get("success"):
+            children.append(dbc.Alert(result.get("error", "Erro desconhecido"), color="danger"))
+            return children
 
-                st.markdown("#### Gráfico da Solução")
-                fig = plot_ode_solution(result["t"], result["y"], "Runge-Kutta 4ª Ordem")
-                st.plotly_chart(fig, use_container_width=True)
+        t = result["t"]
+        y = result["y"]
+        children.append(dbc.Alert("Solução encontrada com sucesso!", color="success"))
+        children.append(dbc.Row([
+            dbc.Col(dbc.Card([dbc.CardBody([html.H5("y(t_final)"), html.P(f"{y[-1]:.6f}")])]), width=4),
+            dbc.Col(dbc.Card([dbc.CardBody([html.H5("Passos"), html.P(str(len(t)))])]), width=4),
+            dbc.Col(dbc.Card([dbc.CardBody([html.H5("Passo h"), html.P(f"{h:.4f}")])]), width=4),
+        ], className="mb-3"))
 
-                st.markdown("#### Tabela de Valores")
-                df = pd.DataFrame({"t": result["t"], "y": result["y"]})
-                st.dataframe(df.style.format({"t": "{:.4f}", "y": "{:.6f}"}), use_container_width=True)
+        fig = plot_ode_solution(t, y, "Euler" if method == "euler" else "Runge-Kutta 4ª Ordem")
+        children.append(dbc.Card([
+            dbc.CardBody([
+                html.H5("Gráfico da Solução"),
+                dcc.Graph(figure=fig),
+            ])
+        ], className="mb-3"))
 
+        df = pd.DataFrame({"t": t, "y": y})
+        children.append(dbc.Card([
+            dbc.CardBody([
+                html.H5("Tabela de Valores"),
+                dash_table.DataTable(
+                    data=df.to_dict("records"),
+                    columns=[{"name": c, "id": c} for c in df.columns],
+                    style_table={"overflowX": "auto"},
+                    style_cell={"textAlign": "center"},
+                    page_size=10,
+                )
+            ])
+        ], className="mb-3"))
+
+        return children
     except Exception as e:
-        st.error(f"Erro ao processar entrada: {e}")
+        return dbc.Alert(f"Erro ao processar entrada: {e}", color="danger")
