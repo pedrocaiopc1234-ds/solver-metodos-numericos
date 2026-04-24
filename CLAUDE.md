@@ -151,3 +151,36 @@ Executar o método e, quando ocorrer erro (divisão por zero, overflow, etc.), c
 5. Desenvolver interface Streamlit (`app.py` + `pages/`)
 6. Configurar PyWebview para desktop
 7. Documentar no README
+
+## Versionamento no GitHub
+
+Toda alteração no código deve ser salva no repositório remoto no GitHub.
+
+**URL do repositório:** https://github.com/pedrocaiopc1234-ds/solver-metodos-numericos
+
+### Fluxo de commit obrigatório
+
+1. Após editar qualquer arquivo, verificar as mudanças:
+   ```bash
+   git status
+   git diff
+   ```
+
+2. Adicionar os arquivos modificados:
+   ```bash
+   git add <arquivo>
+   # ou, se quiser adicionar tudo:
+   git add -A
+   ```
+
+3. Criar um commit descritivo:
+   ```bash
+   git commit -m "descrição clara da mudança"
+   ```
+
+4. Enviar para o GitHub:
+   ```bash
+   git push origin master
+   ```
+
+**Regra:** nunca deixar alterações locais não commitadas. Sempre que o usuário pedir uma mudança no código, após concluir a edição, executar os comandos acima para persistir no repositório remoto.
