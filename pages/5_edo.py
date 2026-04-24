@@ -3,7 +3,7 @@ EDOs — Euler e Runge-Kutta 4ª Ordem — Dash Page
 """
 
 import dash
-from dash import html, dcc, callback, Output, Input, State, dash_table
+from dash import html, dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
@@ -12,11 +12,6 @@ from utils.dash_ui import parse_function_2d, plot_ode_solution
 
 dash.register_page(__name__, path="/edos", title="EDOs", name="EDOs")
 
-METHODS = [
-    {"label": "Euler", "value": "euler"},
-    {"label": "Runge-Kutta 4ª Ordem", "value": "rk4"},
-]
-
 layout = dbc.Container([
     html.H2("🌊 Equações Diferenciais Ordinárias", className="mb-3"),
     dbc.Card([
@@ -24,11 +19,13 @@ layout = dbc.Container([
             dbc.Row([
                 dbc.Col([
                     dbc.Label("Método"),
-                    dcc.Dropdown(
+                    dbc.Select(
                         id="ode-method",
-                        options=METHODS,
+                        options=[
+                            {"label": "Euler", "value": "euler"},
+                            {"label": "Runge-Kutta 4ª Ordem", "value": "rk4"},
+                        ],
                         value="euler",
-                        clearable=False,
                     ),
                 ], width=12, md=4),
             ], className="mb-3"),
@@ -116,13 +113,7 @@ def calculate(n_clicks, method, f_str, y0, t0, tf, h):
         children.append(dbc.Card([
             dbc.CardBody([
                 html.H5("Tabela de Valores"),
-                dash_table.DataTable(
-                    data=df.to_dict("records"),
-                    columns=[{"name": c, "id": c} for c in df.columns],
-                    style_table={"overflowX": "auto"},
-                    style_cell={"textAlign": "center"},
-                    page_size=10,
-                )
+                dbc.Table.from_dataframe(df, striped=True, bordered=True, hover=True, responsive="sm", className="text-center"),
             ])
         ], className="mb-3"))
 

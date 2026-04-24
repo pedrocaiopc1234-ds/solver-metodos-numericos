@@ -3,7 +3,7 @@ Interpolação Polinomial — Dash Page
 """
 
 import dash
-from dash import html, dcc, callback, Output, Input, State, dash_table
+from dash import html, dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
@@ -12,11 +12,6 @@ from core.plot import plot_newton_interpolation, plot_lagrange_interpolation
 
 dash.register_page(__name__, path="/interpolacao", title="Interpolação", name="Interpolação")
 
-METHODS = [
-    {"label": "Newton (Diferenças Divididas)", "value": "newton"},
-    {"label": "Lagrange", "value": "lagrange"},
-]
-
 layout = dbc.Container([
     html.H2("📈 Interpolação Polinomial", className="mb-3"),
     dbc.Card([
@@ -24,11 +19,13 @@ layout = dbc.Container([
             dbc.Row([
                 dbc.Col([
                     dbc.Label("Método"),
-                    dcc.Dropdown(
+                    dbc.Select(
                         id="interp-method",
-                        options=METHODS,
+                        options=[
+                            {"label": "Newton (Diferenças Divididas)", "value": "newton"},
+                            {"label": "Lagrange", "value": "lagrange"},
+                        ],
                         value="newton",
-                        clearable=False,
                     ),
                 ], width=12, md=4),
             ], className="mb-3"),
@@ -83,12 +80,7 @@ def calculate(n_clicks, method, x_str, y_str, x_eval):
         children.append(dbc.Card([
             dbc.CardBody([
                 html.H5("Pontos de Interpolação"),
-                dash_table.DataTable(
-                    data=pts_df.to_dict("records"),
-                    columns=[{"name": c, "id": c} for c in pts_df.columns],
-                    style_table={"overflowX": "auto"},
-                    style_cell={"textAlign": "center"},
-                )
+                dbc.Table.from_dataframe(pts_df, striped=True, bordered=True, hover=True, responsive="sm", className="text-center"),
             ])
         ], className="mb-3"))
 

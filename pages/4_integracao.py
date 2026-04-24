@@ -12,12 +12,6 @@ from utils.dash_ui import parse_function
 
 dash.register_page(__name__, path="/integracao", title="Integração", name="Integração")
 
-METHODS = [
-    {"label": "Simpson 1/3", "value": "simpson"},
-    {"label": "Trapézio Repetido", "value": "trapezoidal"},
-    {"label": "Simpson 3/8", "value": "three_eight"},
-]
-
 layout = dbc.Container([
     html.H2("📉 Integração Numérica", className="mb-3"),
     dbc.Card([
@@ -25,11 +19,14 @@ layout = dbc.Container([
             dbc.Row([
                 dbc.Col([
                     dbc.Label("Método"),
-                    dcc.Dropdown(
+                    dbc.Select(
                         id="int-method",
-                        options=METHODS,
+                        options=[
+                            {"label": "Simpson 1/3", "value": "simpson"},
+                            {"label": "Trapézio Repetido", "value": "trapezoidal"},
+                            {"label": "Simpson 3/8", "value": "three_eight"},
+                        ],
                         value="simpson",
-                        clearable=False,
                     ),
                 ], width=12, md=4),
             ], className="mb-3"),

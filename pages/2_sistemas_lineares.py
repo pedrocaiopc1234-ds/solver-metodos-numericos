@@ -3,7 +3,7 @@ Sistemas Lineares — Dash Page
 """
 
 import dash
-from dash import html, dcc, callback, Output, Input, State, dash_table
+from dash import html, dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
@@ -12,13 +12,6 @@ from utils.dash_ui import display_matrix
 
 dash.register_page(__name__, path="/sistemas-lineares", title="Sistemas Lineares", name="Sistemas Lineares")
 
-METHODS = [
-    {"label": "Fatoração LU", "value": "lu"},
-    {"label": "Eliminação de Gauss", "value": "gauss"},
-    {"label": "Gauss-Seidel", "value": "gauss_seidel"},
-    {"label": "Gauss-Jacobi", "value": "gauss_jacobi"},
-]
-
 layout = dbc.Container([
     html.H2("📐 Sistemas Lineares", className="mb-3"),
     dbc.Card([
@@ -26,11 +19,15 @@ layout = dbc.Container([
             dbc.Row([
                 dbc.Col([
                     dbc.Label("Método"),
-                    dcc.Dropdown(
+                    dbc.Select(
                         id="ls-method",
-                        options=METHODS,
+                        options=[
+                            {"label": "Fatoração LU", "value": "lu"},
+                            {"label": "Eliminação de Gauss", "value": "gauss"},
+                            {"label": "Gauss-Seidel", "value": "gauss_seidel"},
+                            {"label": "Gauss-Jacobi", "value": "gauss_jacobi"},
+                        ],
                         value="lu",
-                        clearable=False,
                     ),
                 ], width=12, md=4),
             ], className="mb-3"),
@@ -96,8 +93,8 @@ def calculate(n_clicks, method, A_str, b_str, tol, max_iter):
         df_A = display_matrix(A, "A")
         df_b = display_matrix(b.reshape(-1, 1), "b")
         children.append(dbc.Row([
-            dbc.Col(dbc.Card([dbc.CardBody([html.H6("Matriz A"), dash_table.DataTable(data=df_A.to_dict("records"), columns=[{"name": c, "id": c} for c in df_A.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"})])]), width=6),
-            dbc.Col(dbc.Card([dbc.CardBody([html.H6("Vetor b"), dash_table.DataTable(data=df_b.to_dict("records"), columns=[{"name": c, "id": c} for c in df_b.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"})])]), width=6),
+            dbc.Col(dbc.Card([dbc.CardBody([html.H6("Matriz A"), dbc.Table.from_dataframe(df_A, striped=True, bordered=True, hover=True, responsive="sm", className="text-center")])]), width=6),
+            dbc.Col(dbc.Card([dbc.CardBody([html.H6("Vetor b"), dbc.Table.from_dataframe(df_b, striped=True, bordered=True, hover=True, responsive="sm", className="text-center")])]), width=6),
         ], className="mb-3"))
 
         if method == "lu":
@@ -126,8 +123,8 @@ def calculate(n_clicks, method, A_str, b_str, tol, max_iter):
             df_L = display_matrix(result["L"], "L")
             df_U = display_matrix(result["U"], "U")
             children.append(dbc.Row([
-                dbc.Col(dbc.Card([dbc.CardBody([html.H6("Matriz L"), dash_table.DataTable(data=df_L.to_dict("records"), columns=[{"name": c, "id": c} for c in df_L.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"})])]), width=6),
-                dbc.Col(dbc.Card([dbc.CardBody([html.H6("Matriz U"), dash_table.DataTable(data=df_U.to_dict("records"), columns=[{"name": c, "id": c} for c in df_U.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"})])]), width=6),
+                dbc.Col(dbc.Card([dbc.CardBody([html.H6("Matriz L"), dbc.Table.from_dataframe(df_L, striped=True, bordered=True, hover=True, responsive="sm", className="text-center")])]), width=6),
+                dbc.Col(dbc.Card([dbc.CardBody([html.H6("Matriz U"), dbc.Table.from_dataframe(df_U, striped=True, bordered=True, hover=True, responsive="sm", className="text-center")])]), width=6),
             ], className="mb-3"))
 
         x = result.get("x")
@@ -137,7 +134,7 @@ def calculate(n_clicks, method, A_str, b_str, tol, max_iter):
             children.append(dbc.Card([
                 dbc.CardBody([
                     html.H5("Solução x"),
-                    dash_table.DataTable(data=df_x.to_dict("records"), columns=[{"name": c, "id": c} for c in df_x.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"}),
+                    dbc.Table.from_dataframe(df_x, striped=True, bordered=True, hover=True, responsive="sm", className="text-center"),
                 ])
             ], className="mb-3"))
             Ax = np.dot(A, x)
@@ -146,7 +143,7 @@ def calculate(n_clicks, method, A_str, b_str, tol, max_iter):
             children.append(dbc.Card([
                 dbc.CardBody([
                     html.H5("Verificação A·x"),
-                    dash_table.DataTable(data=df_Ax.to_dict("records"), columns=[{"name": c, "id": c} for c in df_Ax.columns], style_table={"overflowX": "auto"}, style_cell={"textAlign": "center"}),
+                    dbc.Table.from_dataframe(df_Ax, striped=True, bordered=True, hover=True, responsive="sm", className="text-center"),
                     html.P(f"Erro ||Ax - b||₂: {err:.2e}"),
                 ])
             ], className="mb-3"))

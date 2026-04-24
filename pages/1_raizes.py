@@ -3,7 +3,7 @@ Métodos para Encontrar Raízes — Dash Page
 """
 
 import dash
-from dash import html, dcc, callback, Output, Input, State, dash_table
+from dash import html, dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
@@ -13,12 +13,6 @@ from utils.dash_ui import parse_function
 
 dash.register_page(__name__, path="/raizes", title="Raízes", name="Raízes")
 
-METHODS = [
-    {"label": "Bissecção", "value": "bisection"},
-    {"label": "Newton-Raphson", "value": "newton"},
-    {"label": "Secante", "value": "secant"},
-]
-
 layout = dbc.Container([
     html.H2("🎯 Métodos para Encontrar Raízes", className="mb-3"),
     dbc.Card([
@@ -26,11 +20,14 @@ layout = dbc.Container([
             dbc.Row([
                 dbc.Col([
                     dbc.Label("Método"),
-                    dcc.Dropdown(
+                    dbc.Select(
                         id="root-method",
-                        options=METHODS,
+                        options=[
+                            {"label": "Bissecção", "value": "bisection"},
+                            {"label": "Newton-Raphson", "value": "newton"},
+                            {"label": "Secante", "value": "secant"},
+                        ],
                         value="bisection",
-                        clearable=False,
                     ),
                 ], width=12, md=4),
             ], className="mb-3"),
@@ -159,18 +156,16 @@ def calculate(n_clicks, method, f_str, df_str, a, b, tol, max_iter):
             df.index = df.index + 1
             df.index.name = "Iteração"
             df = df.reset_index()
+            # round for display
+            for col in df.columns:
+                if col != "Iteração":
+                    df[col] = df[col].apply(lambda x: f"{x:.6g}" if isinstance(x, float) else str(x))
             children.append(dbc.Card([
                 dbc.CardBody([
                     html.H5("Tabela de Iterações"),
-                    dash_table.DataTable(
-                        data=df.to_dict("records"),
-                        columns=[{"name": str(c), "id": str(c)} for c in df.columns],
-                        style_table={"overflowX": "auto"},
-                        style_cell={"textAlign": "center"},
-                        page_size=10,
-                    )
+                    dbc.Table.from_dataframe(df, striped=True, bordered=True, hover=True, responsive="sm", className="text-center"),
                 ])
-            ]))
+            ], className="mb-3"))
 
         return children
     except Exception as e:
