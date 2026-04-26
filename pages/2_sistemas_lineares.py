@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from core.linear_systems import lu_factorization, gaussian_elimination, gauss_seidel, gauss_jacobi
 from utils.dash_ui import display_matrix
+from validation.linear_systems_validation import validate_matrix, validate_vector, validate_matrix_vector_dimensions
 
 dash.register_page(__name__, path="/sistemas-lineares", title="Sistemas Lineares", name="Sistemas Lineares")
 
@@ -88,6 +89,32 @@ def calculate(n_clicks, method, A_str, b_str, tol, max_iter):
         tol = float(tol) if tol is not None else 1e-10
         max_iter = int(max_iter) if max_iter is not None else 100
 
+        # ── Validação de entrada ──
+        errors = []
+
+        v = validate_matrix(A)
+        if not v["valid"]:
+            errors.append(v["error"])
+
+        v = validate_vector(b)
+        if not v["valid"]:
+            errors.append(v["error"])
+
+        if not errors:
+            v = validate_matrix_vector_dimensions(A, b)
+            if not v["valid"]:
+                errors.append(v["error"])
+
+        if method in ("gauss_seidel", "gauss_jacobi"):
+            if tol <= 0:
+                errors.append("Tolerância deve ser maior que 0")
+            if max_iter <= 0:
+                errors.append("Máximo de iterações deve ser maior que 0")
+
+        if errors:
+            return dbc.Alert("❌ " + " | ".join(errors), color="danger")
+
+        # ── Cálculo ──
         children = []
         children.append(html.H5("Entrada Validada"))
         df_A = display_matrix(A, "A")

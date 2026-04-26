@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from core.interpolation import newton_interpolation, lagrange_interpolation
 from core.plot import plot_newton_interpolation, plot_lagrange_interpolation
+from validation.interpolation_validation import validate_interpolation_points, validate_evaluation_point
 
 dash.register_page(__name__, path="/interpolacao", title="Interpolação", name="Interpolação")
 
@@ -70,11 +71,21 @@ def calculate(n_clicks, method, x_str, y_str, x_eval):
         y = np.array([float(v.strip()) for v in y_str.split(",")])
         x_eval = float(x_eval) if x_eval is not None else 0.0
 
+        # ── Validação de entrada ──
+        errors = []
+
+        v = validate_interpolation_points(x, y)
+        if not v["valid"]:
+            errors.append(v["error"])
+
+        v = validate_evaluation_point(x_eval)
+        if not v["valid"]:
+            errors.append(v["error"])
+
+        if errors:
+            return dbc.Alert("❌ " + " | ".join(errors), color="danger")
+
         children = []
-        if len(x) != len(y):
-            return dbc.Alert("x e y devem ter o mesmo número de elementos.", color="danger")
-        if len(x) < 2:
-            return dbc.Alert("Mínimo de 2 pontos necessários.", color="danger")
 
         pts_df = pd.DataFrame({"x": x, "y": y})
         children.append(dbc.Card([

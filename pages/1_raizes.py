@@ -10,6 +10,7 @@ import pandas as pd
 from core.roots import bisection, newton, secant
 from core.plot import plot_bisection, plot_newton, plot_secant
 from utils.dash_ui import parse_function
+from validation.roots_validation import validate_interval, validate_tolerance, validate_max_iterations, validate_initial_guess
 
 dash.register_page(__name__, path="/raizes", title="Raízes", name="Raízes")
 
@@ -102,6 +103,41 @@ def calculate(n_clicks, method, f_str, df_str, a, b, tol, max_iter):
         a = float(a) if a is not None else 0.0
         b = float(b) if b is not None else 0.0
 
+        # ── Validação de entrada ──
+        errors = []
+
+        v = validate_tolerance(tol)
+        if not v["valid"]:
+            errors.append(v["error"])
+
+        v = validate_max_iterations(max_iter)
+        if not v["valid"]:
+            errors.append(v["error"])
+
+        if method == "bisection":
+            v = validate_interval(a, b)
+            if not v["valid"]:
+                errors.append(v["error"])
+
+        if method == "newton":
+            v = validate_initial_guess(a)
+            if not v["valid"]:
+                errors.append(v["error"])
+
+        if method == "secant":
+            v = validate_initial_guess(a)
+            if not v["valid"]:
+                errors.append(v["error"])
+            v = validate_initial_guess(b)
+            if not v["valid"]:
+                errors.append(v["error"])
+            if a is not None and b is not None and abs(float(b) - float(a)) < 1e-15:
+                errors.append("x₀ e x₁ devem ser diferentes")
+
+        if errors:
+            return dbc.Alert("❌ " + " | ".join(errors), color="danger")
+
+        # ── Cálculo ──
         if method == "bisection":
             result = bisection(f, a, b, tol, max_iter)
             fig = plot_bisection(f, a, b, result.get("root"), result.get("iterations")) if result.get("success") else None
@@ -156,7 +192,6 @@ def calculate(n_clicks, method, f_str, df_str, a, b, tol, max_iter):
             df.index = df.index + 1
             df.index.name = "Iteração"
             df = df.reset_index()
-            # round for display
             for col in df.columns:
                 if col != "Iteração":
                     df[col] = df[col].apply(lambda x: f"{x:.6g}" if isinstance(x, float) else str(x))

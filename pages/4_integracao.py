@@ -9,6 +9,7 @@ import numpy as np
 from core.integration import simpson, trapezoidal_repeated, three_eight_method
 from core.plot import plot_simpson, plot_trapezoidal, plot_three_eight
 from utils.dash_ui import parse_function
+from validation.integration_validation import validate_integration_interval, validate_subintervals
 
 dash.register_page(__name__, path="/integracao", title="Integração", name="Integração")
 
@@ -92,6 +93,25 @@ def calculate(n_clicks, method, f_str, a, b, n):
         b = float(b) if b is not None else 0.0
         n = int(n) if n is not None else 4
 
+        # ── Validação de entrada ──
+        errors = []
+
+        v = validate_integration_interval(a, b)
+        if not v["valid"]:
+            errors.append(v["error"])
+
+        if method != "three_eight":
+            v = validate_subintervals(n)
+            if not v["valid"]:
+                errors.append(v["error"])
+
+        if method == "simpson" and n % 2 != 0:
+            errors.append("Para Simpson 1/3, n deve ser par")
+
+        if errors:
+            return dbc.Alert("❌ " + " | ".join(errors), color="danger")
+
+        # ── Cálculo ──
         if method == "simpson":
             result = simpson(f, a, b, n)
             fig = plot_simpson(f, a, b, n, result["result"]) if result.get("success") else None

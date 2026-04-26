@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from core.ode import euler_method, runge_kutta_4
 from utils.dash_ui import parse_function_2d, plot_ode_solution
+from validation.ode_validation import validate_initial_condition, validate_time_interval, validate_step_size
 
 dash.register_page(__name__, path="/edos", title="EDOs", name="EDOs")
 
@@ -82,6 +83,25 @@ def calculate(n_clicks, method, f_str, y0, t0, tf, h):
         tf = float(tf) if tf is not None else 1.0
         h = float(h) if h is not None else 0.1
 
+        # ── Validação de entrada ──
+        errors = []
+
+        v = validate_initial_condition(y0)
+        if not v["valid"]:
+            errors.append(v["error"])
+
+        v = validate_time_interval(t0, tf)
+        if not v["valid"]:
+            errors.append(v["error"])
+
+        v = validate_step_size(h)
+        if not v["valid"]:
+            errors.append(v["error"])
+
+        if errors:
+            return dbc.Alert("❌ " + " | ".join(errors), color="danger")
+
+        # ── Cálculo ──
         if method == "euler":
             result = euler_method(f, y0, t0, tf, h)
         else:
