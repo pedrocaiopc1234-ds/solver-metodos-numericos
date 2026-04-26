@@ -15,13 +15,19 @@ venv\Scripts\python.exe app.py
 
 ## Executar Testes
 
+Rodar todos os testes:
 ```bash
-PYTHONPATH=. venv\Scripts\python.exe tests\test.py -v
+PYTHONPATH=. venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Para testar apenas um método específico:
+Testar apenas um módulo:
 ```bash
-PYTHONPATH=. venv\Scripts\python.exe -m unittest tests.test.TestRootsMethods.test_bisection_simple -v
+PYTHONPATH=. venv\Scripts\python.exe -m unittest tests.test_roots -v
+```
+
+Testar apenas um caso específico:
+```bash
+PYTHONPATH=. venv\Scripts\python.exe -m unittest tests.test_roots.TestRootsMethods.test_bisection_simple -v
 ```
 
 ## Estrutura
@@ -50,7 +56,13 @@ pages/              # Páginas Dash (multipage app com dash.register_page)
   5_edo.py
 
 tests/
-  test.py           # Testes unitários para core, plot e utils
+  __init__.py
+  test_roots.py            # Bissecção, Newton, Secante
+  test_linear_systems.py   # LU, Gauss, Gauss-Seidel, Gauss-Jacobi
+  test_interpolation.py    # Newton, Lagrange
+  test_integration.py      # Simpson, Trapézio, 3/8
+  test_ode.py              # Euler, Runge-Kutta 4
+  test_plots.py            # Funções Plotly
 ```
 
 ## Padrão de Retorno dos Métodos Core
@@ -116,7 +128,7 @@ Usuário → Dash Page → parse_function → Core Method → Resultado → UI +
 | **UI (Dash)** | Interface com usuário, formulários, exibição de resultados | `app.py`, `pages/` |
 | **Core (Lógica)** | Implementação dos métodos numéricos | `core/*.py` |
 | **Validation** | Validação de inputs antes do cálculo | `validation/*.py` |
-| **Tests** | Verificar corretude das implementações | `tests/test.py` |
+| **Tests** | Verificar corretude das implementações | `tests/test_*.py` |
 
 ### Fluxo de Dados
 
@@ -149,7 +161,7 @@ Executar o método e, quando ocorrer erro (divisão por zero, overflow, etc.), c
 1. Criar estrutura de diretórios (✅ feito: core/, validation/, pages/, tests/)
 2. Implementar `core/` — métodos numéricos
 3. Implementar `validation/` — validações de inputs
-4. Criar `test.py` e validar cada método do core
+4. Criar testes unitários e validar cada método do core (✅ feito)
 5. Desenvolver interface Dash (`app.py` + `pages/`)
 6. Configurar PyWebview para desktop (opcional)
 7. Documentar no README
