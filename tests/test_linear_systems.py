@@ -50,8 +50,8 @@ class TestLURobustness(unittest.TestCase):
         A = [[1, 2], [1, 2]]
         b = [3, 3]
         r = lu_factorization(A, b)
-        # Retorna success=True com NaN — degeneração conhecida
-        self.assertTrue(np.isnan(r["x"]).any() or not r["success"])
+        # Agora retorna success=False corretamente
+        self.assertFalse(r["success"])
 
     def test_robust_02_zero_matrix(self):
         """Matriz de zeros"""
@@ -199,12 +199,11 @@ class TestLURobustness(unittest.TestCase):
 class TestGaussianEliminationRobustness(unittest.TestCase):
 
     def test_robust_01_singular(self):
-        """Matriz singular — pode retornar NaN sem detectar"""
+        """Matriz singular"""
         A = [[1, 2], [1, 2]]
         b = [3, 3]
         r = gaussian_elimination(A, b)
-        # Retorna success=True com NaN — degeneração conhecida
-        self.assertTrue(np.isnan(r["x"]).any() or not r["success"])
+        self.assertFalse(r["success"])
 
     def test_robust_02_zero_matrix(self):
         """Matriz zero"""
@@ -214,12 +213,12 @@ class TestGaussianEliminationRobustness(unittest.TestCase):
         self.assertFalse(r["success"])
 
     def test_robust_03_diagonal(self):
-        """Diagonal — pode falhar por divisão zero se coluna zero"""
+        """Diagonal"""
         A = [[5, 0], [0, 3]]
         b = [10, 9]
         r = gaussian_elimination(A, b)
-        # Pivotação pode não funcionar para diagonal com zeros
-        self.assertIsInstance(r["success"], bool)
+        self.assertTrue(r["success"])
+        self.assertTrue(np.allclose(r["x"], [2, 3]))
 
     def test_robust_04_3x3(self):
         """3x3"""
@@ -278,11 +277,12 @@ class TestGaussianEliminationRobustness(unittest.TestCase):
         self.assertFalse(r["success"])
 
     def test_robust_12_identity(self):
-        """Identidade — pode falhar por pivô zero na diagonal"""
+        """Identidade"""
         A = [[1, 0], [0, 1]]
         b = [3, 4]
         r = gaussian_elimination(A, b)
-        self.assertIsInstance(r["success"], bool)
+        self.assertTrue(r["success"])
+        self.assertTrue(np.allclose(r["x"], [3, 4]))
 
     def test_robust_13_4x4(self):
         """4x4 diagonal"""
@@ -292,12 +292,11 @@ class TestGaussianEliminationRobustness(unittest.TestCase):
         self.assertTrue(r["success"])
 
     def test_robust_14_row_dependent(self):
-        """Linhas dependentes — pode retornar NaN"""
+        """Linhas dependentes"""
         A = [[1, 2, 3], [2, 4, 6], [1, 1, 1]]
         b = [6, 12, 3]
         r = gaussian_elimination(A, b)
-        # Pode retornar success=True com NaN
-        self.assertTrue(np.isnan(r["x"]).any() or not r["success"])
+        self.assertFalse(r["success"])
 
     def test_robust_15_large_scale(self):
         """Escala diferente"""
@@ -307,19 +306,20 @@ class TestGaussianEliminationRobustness(unittest.TestCase):
         self.assertIsInstance(r["success"], bool)
 
     def test_robust_16_zero_rhs(self):
-        """b=0 (homogêneo) — pode falhar por pivô zero na diagonal"""
+        """b=0 (homogêneo)"""
         A = [[1, 0], [0, 1]]
         b = [0, 0]
         r = gaussian_elimination(A, b)
-        self.assertIsInstance(r["success"], bool)
+        self.assertTrue(r["success"])
+        self.assertTrue(np.allclose(r["x"], [0, 0]))
 
     def test_robust_17_all_ones(self):
         """Todos 1s — singular, pode retornar NaN"""
         A = [[1, 1], [1, 1]]
         b = [2, 2]
         r = gaussian_elimination(A, b)
-        # Retorna success=True com NaN — degeneração conhecida
-        self.assertTrue(np.isnan(r["x"]).any() or not r["success"])
+        # Agora retorna success=False corretamente
+        self.assertFalse(r["success"])
 
     def test_robust_18_symmetric_pd(self):
         """Simétrica definida positiva"""

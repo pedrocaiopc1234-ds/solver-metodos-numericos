@@ -80,10 +80,10 @@ class TestEulerRobustness(unittest.TestCase):
         self.assertAlmostEqual(r["y"][-1], math.exp(0.1), places=2)
 
     def test_robust_09_t0_equals_tf(self):
-        """t0 == tf — intervalo zero"""
+        """t0 == tf — deve falhar"""
         f = lambda t, y: y
         r = euler_method(f, y0=1.0, t0=1, tf=1, h=0.1)
-        self.assertIsInstance(r["success"], bool)
+        self.assertFalse(r["success"])
 
     def test_robust_10_sin_rhs(self):
         """dy/dt = sin(t) → y = 1 - cos(t) + y0"""

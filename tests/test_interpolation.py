@@ -46,9 +46,9 @@ class TestNewtonInterpolationRobustness(unittest.TestCase):
         self.assertAlmostEqual(r["result"], 50.0, places=2)
 
     def test_robust_04_duplicate_x(self):
-        """Pontos x duplicados — divisão por zero"""
+        """Pontos x duplicados — deve retornar erro"""
         r = newton_interpolation([1, 1, 2], [3, 5, 4], 1.5)
-        self.assertIsInstance(r["success"], bool)
+        self.assertFalse(r["success"])
 
     def test_robust_05_negative_x(self):
         """Valores x negativos"""
@@ -189,17 +189,17 @@ class TestLagrangeInterpolationRobustness(unittest.TestCase):
         self.assertAlmostEqual(r["result"], 50.0, places=2)
 
     def test_robust_04_eval_at_node(self):
-        """Avaliar em nó existente — divisão por zero no Lagrange"""
+        """Avaliar em nó existente — deve retornar o valor y correspondente"""
         x = [1, 2, 3]
         y = [1, 4, 9]
         r = lagrange_interpolation(x, y, 2)
-        # Lagrange divide por (x_eval - x[j]) que é zero — pode falhar
-        self.assertIsInstance(r["success"], bool)
+        self.assertTrue(r["success"])
+        self.assertAlmostEqual(r["result"], 4.0, places=5)
 
     def test_robust_05_duplicate_x(self):
-        """x duplicados — divisão por zero"""
+        """x duplicados — deve retornar erro"""
         r = lagrange_interpolation([1, 1, 2], [3, 5, 4], 1.5)
-        self.assertIsInstance(r["success"], bool)
+        self.assertFalse(r["success"])
 
     def test_robust_06_negative_x(self):
         """Valores x negativos"""

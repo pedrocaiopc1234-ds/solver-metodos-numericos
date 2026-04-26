@@ -27,7 +27,20 @@ def euler_method(f, y0, t0, tf, h=0.1):
             return {"success": False, "t": None, "y": None,
                     "error": "Passo h deve ser maior que 0"}
 
+        if tf <= t0:
+            return {"success": False, "t": None, "y": None,
+                    "error": "tf deve ser maior que t0"}
+
+        if np.isnan(y0) or np.isinf(y0):
+            return {"success": False, "t": None, "y": None,
+                    "error": "y0 deve ser um valor finito"}
+
         n = int(np.ceil((tf - t0) / h)) + 1
+
+        if n > 1000000:
+            return {"success": False, "t": None, "y": None,
+                    "error": "Número de passos muito grande. Reduza o intervalo ou aumente h."}
+
         t = np.linspace(t0, tf, n)
         y = np.zeros(n)
         y[0] = y0
@@ -70,7 +83,20 @@ def runge_kutta_4(f, y0, t0, tf, h=0.1):
             return {"success": False, "t": None, "y": None,
                     "error": "Passo h deve ser maior que 0"}
 
+        if tf <= t0:
+            return {"success": False, "t": None, "y": None,
+                    "error": "tf deve ser maior que t0"}
+
+        if np.isnan(y0) or np.isinf(y0):
+            return {"success": False, "t": None, "y": None,
+                    "error": "y0 deve ser um valor finito"}
+
         n = int(np.ceil((tf - t0) / h)) + 1
+
+        if n > 1000000:
+            return {"success": False, "t": None, "y": None,
+                    "error": "Número de passos muito grande. Reduza o intervalo ou aumente h."}
+
         t = np.linspace(t0, tf, n)
         y = np.zeros(n)
         y[0] = y0

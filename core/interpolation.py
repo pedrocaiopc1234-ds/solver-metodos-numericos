@@ -43,6 +43,14 @@ def newton_interpolation(x, y, x_eval):
             return {"success": False, "result": None, "coefficients": None,
                     "error": "Mínimo de 2 pontos necessários"}
 
+        if len(np.unique(x)) != len(x):
+            return {"success": False, "result": None, "coefficients": None,
+                    "error": "Valores de x devem ser únicos (sem duplicatas)"}
+
+        if np.any(np.isnan(x)) or np.any(np.isinf(x)) or np.any(np.isnan(y)) or np.any(np.isinf(y)):
+            return {"success": False, "result": None, "coefficients": None,
+                    "error": "Valores de x ou y contêm NaN ou Inf"}
+
         n = len(x)
         table = _divided_differences(x, y)
         coefficients = [table[0, i] for i in range(n)]
@@ -86,6 +94,19 @@ def lagrange_interpolation(x, y, x_eval):
             return {"success": False, "result": None,
                     "error": "Mínimo de 2 pontos necessários"}
 
+        if len(np.unique(x)) != len(x):
+            return {"success": False, "result": None,
+                    "error": "Valores de x devem ser únicos (sem duplicatas)"}
+
+        if np.any(np.isnan(x)) or np.any(np.isinf(x)) or np.any(np.isnan(y)) or np.any(np.isinf(y)):
+            return {"success": False, "result": None,
+                    "error": "Valores de x ou y contêm NaN ou Inf"}
+
+        # Shortcut: if x_eval equals a node, return the corresponding y value
+        for i in range(len(x)):
+            if x_eval == x[i]:
+                return {"success": True, "result": float(y[i]), "error": None}
+
         n = len(x)
         result = 0.0
 
@@ -93,9 +114,6 @@ def lagrange_interpolation(x, y, x_eval):
             term = y[i]
             for j in range(n):
                 if i != j:
-                    if x_eval - x[j] == 0:
-                        return {"success": False, "result": None,
-                                "error": f"Divisão por zero: x_eval = x[j] para j={j}"}
                     term *= (x_eval - x[j]) / (x[i] - x[j])
             result += term
 

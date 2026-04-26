@@ -336,10 +336,10 @@ class TestThreeEightRobustness(unittest.TestCase):
         self.assertTrue(r["success"])
 
     def test_robust_05_negative_interval(self):
-        """a > b"""
+        """a > b — deve falhar"""
         f = lambda x: x**2
         r = three_eight_method(f, 3, 0)
-        self.assertIsInstance(r["success"], bool)
+        self.assertFalse(r["success"])
 
     def test_robust_06_zero_function(self):
         """f(x) = 0"""

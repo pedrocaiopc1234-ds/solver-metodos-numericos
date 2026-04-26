@@ -74,6 +74,12 @@ class TestBisectionRobustness(unittest.TestCase):
         r = bisection(f, 0, 1e-15)
         self.assertFalse(r["success"])
 
+    def test_robust_04b_a_greater_than_b(self):
+        """a > b — deve falhar"""
+        f = lambda x: x**2 - 4
+        r = bisection(f, 3, 0)
+        self.assertFalse(r["success"])
+
     def test_robust_05_large_interval(self):
         """Intervalo grande com raiz"""
         f = lambda x: x**3 - 8

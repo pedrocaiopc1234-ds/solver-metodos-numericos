@@ -21,6 +21,13 @@ def simpson(f, a, b, n=4):
         a, b = float(a), float(b)
         n = int(n)
 
+        if a == b:
+            return {"success": True, "result": 0.0, "error": None}
+
+        if n <= 0:
+            return {"success": False, "result": None,
+                    "error": "n deve ser maior que 0"}
+
         if n % 2 != 0:
             return {"success": False, "result": None,
                     "error": "n deve ser par para Simpson 1/3"}
@@ -61,6 +68,9 @@ def trapezoidal_repeated(f, a, b, n=4):
         a, b = float(a), float(b)
         n = int(n)
 
+        if a == b:
+            return {"success": True, "result": 0.0, "error": None}
+
         if n <= 0:
             return {"success": False, "result": None,
                     "error": "n deve ser maior que 0"}
@@ -94,6 +104,13 @@ def three_eight_method(f, a, b):
     """
     try:
         a, b = float(a), float(b)
+
+        if a == b:
+            return {"success": True, "result": 0.0, "error": None}
+
+        if a >= b:
+            return {"success": False, "result": None,
+                    "error": "a deve ser menor que b"}
 
         h = (b - a) / 3
 

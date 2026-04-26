@@ -17,6 +17,19 @@ def lu_factorization(A, b):
         b = np.array(b, dtype=float)
         n = len(A)
 
+        if A.ndim != 2 or A.shape[0] != A.shape[1]:
+            return {"success": False, "x": None, "L": None, "U": None,
+                    "error": "A deve ser uma matriz quadrada"}
+        if len(b) != n:
+            return {"success": False, "x": None, "L": None, "U": None,
+                    "error": f"Dimensões incompatíveis: A({n}x{n}), b({len(b)})"}
+        if np.any(np.isnan(A)) or np.any(np.isinf(A)):
+            return {"success": False, "x": None, "L": None, "U": None,
+                    "error": "Matriz A contém valores inválidos (NaN ou Inf)"}
+        if np.any(np.isnan(b)) or np.any(np.isinf(b)):
+            return {"success": False, "x": None, "L": None, "U": None,
+                    "error": "Vetor b contém valores inválidos (NaN ou Inf)"}
+
         U = A.copy()
         L = np.eye(n)
 
@@ -34,7 +47,7 @@ def lu_factorization(A, b):
                     L[[k, max_idx], :k] = L[[max_idx, k], :k]
 
             for i in range(k + 1, n):
-                if U[k, k] == 0:
+                if abs(U[k, k]) < 1e-14:
                     return {"success": False, "x": None, "L": None, "U": None,
                             "error": "Pivô zero durante eliminação"}
                 L[i, k] = U[i, k] / U[k, k]
@@ -43,9 +56,12 @@ def lu_factorization(A, b):
 
         # Back substitution
         x = np.zeros(n)
+        if abs(U[n-1, n-1]) < 1e-14:
+            return {"success": False, "x": None, "L": None, "U": None,
+                    "error": "Matriz singular: pivô zero na retrosubstituição"}
         x[n-1] = b[n-1] / U[n-1, n-1]
         for i in range(n - 2, -1, -1):
-            if U[i, i] == 0:
+            if abs(U[i, i]) < 1e-14:
                 return {"success": False, "x": None, "L": None, "U": None,
                         "error": "Divisão por zero na retrosubstituição"}
             x[i] = (b[i] - np.dot(U[i, i+1:], x[i+1:])) / U[i, i]
@@ -68,6 +84,19 @@ def gaussian_elimination(A, b):
         b = np.array(b, dtype=float)
         n = len(A)
 
+        if A.ndim != 2 or A.shape[0] != A.shape[1]:
+            return {"success": False, "x": None,
+                    "error": "A deve ser uma matriz quadrada"}
+        if len(b) != n:
+            return {"success": False, "x": None,
+                    "error": f"Dimensões incompatíveis: A({n}x{n}), b({len(b)})"}
+        if np.any(np.isnan(A)) or np.any(np.isinf(A)):
+            return {"success": False, "x": None,
+                    "error": "Matriz A contém valores inválidos (NaN ou Inf)"}
+        if np.any(np.isnan(b)) or np.any(np.isinf(b)):
+            return {"success": False, "x": None,
+                    "error": "Vetor b contém valores inválidos (NaN ou Inf)"}
+
         # Augmented matrix
         aug = np.column_stack([A, b])
 
@@ -82,7 +111,7 @@ def gaussian_elimination(A, b):
                 aug[[k, max_idx]] = aug[[max_idx, k]]
 
             for i in range(k + 1, n):
-                if aug[k, k] == 0:
+                if abs(aug[k, k]) < 1e-14:
                     return {"success": False, "x": None,
                             "error": "Pivô zero durante eliminação"}
                 factor = aug[i, k] / aug[k, k]
@@ -90,9 +119,12 @@ def gaussian_elimination(A, b):
 
         # Back substitution
         x = np.zeros(n)
-        x[n-1] = aug[n-1, n-1] / aug[n-1, n-1]
+        if abs(aug[n-1, n-1]) < 1e-14:
+            return {"success": False, "x": None,
+                    "error": "Matriz singular: pivô zero na retrosubstituição"}
+        x[n-1] = aug[n-1, n] / aug[n-1, n-1]
         for i in range(n - 2, -1, -1):
-            if aug[i, i] == 0:
+            if abs(aug[i, i]) < 1e-14:
                 return {"success": False, "x": None,
                         "error": "Divisão por zero na retrosubstituição"}
             x[i] = (aug[i, n] - np.dot(aug[i, i+1:n], x[i+1:])) / aug[i, i]
@@ -114,6 +146,26 @@ def gauss_seidel(A, b, tol=1e-10, max_iter=100):
         A = np.array(A, dtype=float)
         b = np.array(b, dtype=float)
         n = len(A)
+
+        if A.ndim != 2 or A.shape[0] != A.shape[1]:
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": "A deve ser uma matriz quadrada"}
+        if len(b) != n:
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": f"Dimensões incompatíveis: A({n}x{n}), b({len(b)})"}
+        if max_iter <= 0:
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": "max_iter deve ser maior que 0"}
+        if tol <= 0:
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": "tolerância deve ser maior que 0"}
+        if np.any(np.isnan(A)) or np.any(np.isinf(A)):
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": "Matriz A contém valores inválidos (NaN ou Inf)"}
+        if np.any(np.isnan(b)) or np.any(np.isinf(b)):
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": "Vetor b contém valores inválidos (NaN ou Inf)"}
+
         x = np.zeros(n)
 
         for iteration in range(max_iter):
@@ -128,7 +180,8 @@ def gauss_seidel(A, b, tol=1e-10, max_iter=100):
             if np.linalg.norm(x - x_old) < tol:
                 return {"success": True, "x": x, "iterations": iteration + 1, "error": None}
 
-        return {"success": False, "x": x, "iterations": max_iter,
+        result_x = None if (np.any(np.isnan(x)) or np.any(np.isinf(x))) else x
+        return {"success": False, "x": result_x, "iterations": max_iter,
                 "error": "Máximo de iterações atingido sem convergência"}
     except Exception as e:
         return {"success": False, "x": None, "iterations": 0,
@@ -146,6 +199,26 @@ def gauss_jacobi(A, b, tol=1e-10, max_iter=100):
         A = np.array(A, dtype=float)
         b = np.array(b, dtype=float)
         n = len(A)
+
+        if A.ndim != 2 or A.shape[0] != A.shape[1]:
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": "A deve ser uma matriz quadrada"}
+        if len(b) != n:
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": f"Dimensões incompatíveis: A({n}x{n}), b({len(b)})"}
+        if max_iter <= 0:
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": "max_iter deve ser maior que 0"}
+        if tol <= 0:
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": "tolerância deve ser maior que 0"}
+        if np.any(np.isnan(A)) or np.any(np.isinf(A)):
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": "Matriz A contém valores inválidos (NaN ou Inf)"}
+        if np.any(np.isnan(b)) or np.any(np.isinf(b)):
+            return {"success": False, "x": None, "iterations": 0,
+                    "error": "Vetor b contém valores inválidos (NaN ou Inf)"}
+
         x = np.zeros(n)
 
         for iteration in range(max_iter):
@@ -160,7 +233,8 @@ def gauss_jacobi(A, b, tol=1e-10, max_iter=100):
             if np.linalg.norm(x - x_old) < tol:
                 return {"success": True, "x": x, "iterations": iteration + 1, "error": None}
 
-        return {"success": False, "x": x, "iterations": max_iter,
+        result_x = None if (np.any(np.isnan(x)) or np.any(np.isinf(x))) else x
+        return {"success": False, "x": result_x, "iterations": max_iter,
                 "error": "Método não converge para este sistema"}
     except Exception as e:
         return {"success": False, "x": None, "iterations": 0,
