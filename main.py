@@ -1,6 +1,6 @@
 """
 NumerPy Solver — Aplicação Desktop com pywebview
-================================================
+=================================================
 Este script inicia o servidor Dash embutido e abre uma janela nativa
 para a aplicação, funcionando como um app desktop sem necessidade de navegador.
 
@@ -9,8 +9,26 @@ Uso:
 """
 
 import sys
+import os
 import threading
 import time
+
+# PyInstaller freeze support (necessário para executáveis no Windows)
+import multiprocessing
+multiprocessing.freeze_support()
+
+
+def get_resource_path(relative_path):
+    """Retorna o caminho absoluto, funcionando no Python normal e no PyInstaller."""
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
+
+# Adiciona o diretório da aplicação ao sys.path (PyInstaller)
+if hasattr(sys, "_MEIPASS"):
+    sys.path.insert(0, sys._MEIPASS)
+
 import webview
 
 # Importa o servidor Dash
@@ -31,10 +49,8 @@ def start_server():
 
 def create_app():
     """Cria e configura a janela do aplicativo."""
-    # URL da aplicação
     url = f"http://{HOST}:{PORT}"
 
-    # Configurações da janela
     window_kwargs = {
         "title": TITLE,
         "width": WIDTH,
@@ -46,25 +62,13 @@ def create_app():
         "easy_drag": True,
     }
 
-    # Detecta sistema operacional para configurações específicas
     if sys.platform == "darwin":
-        # macOS: configurações específicas
         window_kwargs["text_select"] = True
     elif sys.platform == "win32":
-        # Windows: usa EdgeChromium (WebView2) se disponível
         window_kwargs["gui"] = "edgechromium"
-    elif sys.platform == "linux":
-        # Linux: tenta usar GTK WebKit
-        pass
 
-    # Cria a janela principal
-    window = webview.create_window(url=url, **window_kwargs)
-
-    # Inicia o pywebview
-    webview.start(
-        debug=False,  # True habilita DevTools (F12)
-        http_server=True,
-    )
+    webview.create_window(url=url, **window_kwargs)
+    webview.start(debug=False, http_server=True)
 
 
 def main():
@@ -77,14 +81,10 @@ def main():
     print("\n  Pressione Ctrl+C para sair.\n")
     print("-" * 60)
 
-    # Inicia o servidor em uma thread separada
     server_thread = threading.Thread(target=start_server, daemon=True)
     server_thread.start()
 
-    # Aguarda o servidor iniciar
     time.sleep(2)
-
-    # Cria e inicia a aplicação
     create_app()
 
 

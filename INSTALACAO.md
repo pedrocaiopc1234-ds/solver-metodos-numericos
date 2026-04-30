@@ -34,15 +34,30 @@ O NumerPy Solver funciona em **qualquer dispositivo**: PCs, notebooks, celulares
    http://127.0.0.1:8050
    ```
 
-### Opção 3: Executável (.exe no Windows)
+### Opção 3: Executável (.exe no Windows) — Recomendado para distribuição
 
-1. **Crie o executável:**
+1. **Instale as dependências de build:**
    ```bash
-   pip install pyinstaller
-   pyinstaller --onefile --windowed --name="NumerPy Solver" main.py
+   pip install -r requirements.txt
    ```
 
-2. **Encontre o .exe** na pasta `dist/` e distribua para usuários.
+2. **Gere o ícone do app (opcional, mas recomendado):**
+   ```bash
+   python create_icon.py
+   ```
+
+3. **Crie o executável:**
+   ```bash
+   python build.py
+   ```
+
+4. **Encontre o .exe** em `dist/NumerPy Solver/NumerPy Solver.exe`.
+
+5. **Crie um atalho na área de trabalho:**
+   - Clique com o botão direito em `NumerPy Solver.exe`
+   - **Enviar para > Área de trabalho (criar atalho)**
+
+6. **Para distribuir:** compacte a pasta inteira `dist/NumerPy Solver/` e envie. O app funciona sem necessidade de instalar Python.
 
 ---
 

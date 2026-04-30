@@ -8,14 +8,29 @@ Run with:
 PWA: Acesse via navegador mobile e "Adicionar à Tela de Início"
 """
 
+import os
+import sys
 import dash
 import dash_bootstrap_components as dbc
 from dash import html, dcc
+
+
+def get_resource_path(relative_path):
+    """Retorna caminho absoluto compatível com PyInstaller."""
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
+
+
+# Garante que o diretório pages/ seja encontrado no PyInstaller
+if hasattr(sys, "_MEIPASS"):
+    sys.path.insert(0, sys._MEIPASS)
 
 # Configuração para funcionar em modo app e web
 app = dash.Dash(
     __name__,
     use_pages=True,
+    assets_folder=get_resource_path("assets"),
     external_stylesheets=[dbc.themes.DARKLY, dbc.icons.FONT_AWESOME],
     suppress_callback_exceptions=True,
     # Remove meta_tags duplicadas (já estão no index_string)
