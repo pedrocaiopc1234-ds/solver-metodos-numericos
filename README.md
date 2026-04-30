@@ -6,8 +6,10 @@
 [![NumPy](https://img.shields.io/badge/NumPy-1.24+-green.svg)](https://numpy.org)
 [![Plotly](https://img.shields.io/badge/Plotly-5.14+-orange.svg)](https://plotly.com)
 [![Dash](https://img.shields.io/badge/Dash-2.9+-lightblue.svg)](https://dash.plotly.com)
+[![pywebview](https://img.shields.io/badge/pywebview-4.0+-purple.svg)](https://pywebview.flowrl.com)
 [![Testes](https://img.shields.io/badge/testes-305%20testes-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/Licença-MIT-green.svg)](LICENSE)
+[![PWA](https://img.shields.io/badge/PWA-Pronto-orange.svg)]()
 
 </div>
 

@@ -1,5 +1,12 @@
+# Core
 dash
 dash-bootstrap-components
 numpy
 plotly
 pandas
+
+# Desktop App (pywebview)
+pywebview
+
+# Optional: criar executável
+pyinstaller; platform_system == "Windows"
