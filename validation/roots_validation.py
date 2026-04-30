@@ -22,22 +22,28 @@ def validate_interval(a, b):
 
 
 def validate_tolerance(tol):
-    """Validate tolerance > 0."""
+    """Validate tolerance > 0 and within reasonable bounds."""
     try:
         tol = float(tol)
         if tol <= 0:
             return {"valid": False, "error": "tolerância deve ser maior que 0"}
+        if tol < 1e-15:
+            return {"valid": False, "error": "tolerância muito pequena (mínimo: 1e-15). Use um valor maior para garantir convergência."}
+        if tol > 1:
+            return {"valid": False, "error": "tolerância muito grande (máximo: 1). Use um valor menor para resultados precisos."}
         return {"valid": True, "error": None}
     except (TypeError, ValueError):
         return {"valid": False, "error": "tolerância deve ser numérica"}
 
 
 def validate_max_iterations(max_iter):
-    """Validate max_iter is a positive integer."""
+    """Validate max_iter is a positive integer within reasonable bounds."""
     try:
         max_iter = int(max_iter)
         if max_iter <= 0:
             return {"valid": False, "error": "max_iter deve ser maior que 0"}
+        if max_iter > 10000:
+            return {"valid": False, "error": "max_iter muito grande (máximo: 10000). Use um valor menor."}
         return {"valid": True, "error": None}
     except (TypeError, ValueError):
         return {"valid": False, "error": "max_iter deve ser um inteiro"}

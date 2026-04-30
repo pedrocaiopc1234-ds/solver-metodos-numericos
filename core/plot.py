@@ -163,14 +163,11 @@ def _build_newton_polynomial_str(x_nodes, coefficients):
 
 
 def _newton_polynomial_func(coefficients, x_nodes):
-    """Return a callable for the Newton interpolating polynomial."""
+    """Return a callable for the Newton interpolating polynomial using Horner's method."""
     def P(x):
-        result = coefficients[0]
-        for i in range(1, len(coefficients)):
-            term = coefficients[i]
-            for j in range(i):
-                term *= (x - x_nodes[j])
-            result += term
+        result = coefficients[-1]
+        for i in range(len(coefficients) - 2, -1, -1):
+            result = result * (x - x_nodes[i]) + coefficients[i]
         return result
     return P
 

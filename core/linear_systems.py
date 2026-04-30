@@ -5,6 +5,17 @@ Linear Systems: LU Factorization, Gaussian Elimination, Gauss-Seidel, Gauss-Jaco
 import numpy as np
 
 
+def _check_diagonal_dominance(A):
+    """Check if matrix A is strictly diagonally dominant. Returns (bool, str)."""
+    n = A.shape[0]
+    for i in range(n):
+        diag = abs(A[i, i])
+        row_sum = np.sum(np.abs(A[i, :])) - diag
+        if diag <= row_sum:
+            return False, f"Linha {i}: |a[{i},{i}]| = {diag:.4g} <= soma dos outros = {row_sum:.4g}. Método pode não convergir."
+    return True, "Matriz é diagonalmente dominante — convergência garantida."
+
+
 def lu_factorization(A, b):
     """
     LU Factorization with partial pivoting.
@@ -140,7 +151,7 @@ def gauss_seidel(A, b, tol=1e-10, max_iter=100):
     Gauss-Seidel iterative method.
 
     Returns:
-        dict with keys: success (bool), x (np.array or None), iterations (int), error (str or None)
+        dict with keys: success (bool), x (np.array or None), iterations (int), error (str or None), warning (str or None)
     """
     try:
         A = np.array(A, dtype=float)
@@ -165,6 +176,9 @@ def gauss_seidel(A, b, tol=1e-10, max_iter=100):
         if np.any(np.isnan(b)) or np.any(np.isinf(b)):
             return {"success": False, "x": None, "iterations": 0,
                     "error": "Vetor b contém valores inválidos (NaN ou Inf)"}
+
+        is_dominant, diag_msg = _check_diagonal_dominance(A)
+        warning = None if is_dominant else diag_msg
 
         x = np.zeros(n)
 
@@ -174,24 +188,24 @@ def gauss_seidel(A, b, tol=1e-10, max_iter=100):
                 sigma = np.dot(A[i, :i], x[:i]) + np.dot(A[i, i+1:], x_old[i+1:])
                 if A[i, i] == 0:
                     return {"success": False, "x": None, "iterations": iteration,
-                            "error": f"Divisão por zero: A[{i},{i}] = 0"}
+                            "error": f"Divisão por zero: A[{i},{i}] = 0", "warning": warning}
                 if np.any(np.isinf(sigma)) or np.any(np.isnan(sigma)):
                     return {"success": False, "x": None, "iterations": iteration,
-                            "error": "Método divergiu: overflow detectado"}
+                            "error": "Método divergiu: overflow detectado", "warning": warning}
                 if abs(b[i] - sigma) > 1e150:
                     return {"success": False, "x": None, "iterations": iteration,
-                            "error": "Método divergiu: valores crescendo sem limite"}
+                            "error": "Método divergiu: valores crescendo sem limite", "warning": warning}
                 x[i] = (b[i] - sigma) / A[i, i]
 
             if np.linalg.norm(x - x_old) < tol:
-                return {"success": True, "x": x, "iterations": iteration + 1, "error": None}
+                return {"success": True, "x": x, "iterations": iteration + 1, "error": None, "warning": warning}
 
         result_x = None if (np.any(np.isnan(x)) or np.any(np.isinf(x))) else x
         return {"success": False, "x": result_x, "iterations": max_iter,
-                "error": "Máximo de iterações atingido sem convergência"}
+                "error": "Máximo de iterações atingido sem convergência", "warning": warning}
     except Exception as e:
         return {"success": False, "x": None, "iterations": 0,
-                "error": f"Método falhou: {str(e)}"}
+                "error": f"Método falhou: {str(e)}", "warning": None}
 
 
 def gauss_jacobi(A, b, tol=1e-10, max_iter=100):
@@ -199,7 +213,7 @@ def gauss_jacobi(A, b, tol=1e-10, max_iter=100):
     Gauss-Jacobi iterative method.
 
     Returns:
-        dict with keys: success (bool), x (np.array or None), iterations (int), error (str or None)
+        dict with keys: success (bool), x (np.array or None), iterations (int), error (str or None), warning (str or None)
     """
     try:
         A = np.array(A, dtype=float)
@@ -225,6 +239,9 @@ def gauss_jacobi(A, b, tol=1e-10, max_iter=100):
             return {"success": False, "x": None, "iterations": 0,
                     "error": "Vetor b contém valores inválidos (NaN ou Inf)"}
 
+        is_dominant, diag_msg = _check_diagonal_dominance(A)
+        warning = None if is_dominant else diag_msg
+
         x = np.zeros(n)
 
         for iteration in range(max_iter):
@@ -233,21 +250,21 @@ def gauss_jacobi(A, b, tol=1e-10, max_iter=100):
                 sigma = np.dot(A[i, :i], x_old[:i]) + np.dot(A[i, i+1:], x_old[i+1:])
                 if A[i, i] == 0:
                     return {"success": False, "x": None, "iterations": iteration,
-                            "error": f"Divisão por zero: A[{i},{i}] = 0"}
+                            "error": f"Divisão por zero: A[{i},{i}] = 0", "warning": warning}
                 if np.any(np.isinf(sigma)) or np.any(np.isnan(sigma)):
                     return {"success": False, "x": None, "iterations": iteration,
-                            "error": "Método divergiu: overflow detectado"}
+                            "error": "Método divergiu: overflow detectado", "warning": warning}
                 if abs(b[i] - sigma) > 1e150:
                     return {"success": False, "x": None, "iterations": iteration,
-                            "error": "Método divergiu: valores crescendo sem limite"}
+                            "error": "Método divergiu: valores crescendo sem limite", "warning": warning}
                 x[i] = (b[i] - sigma) / A[i, i]
 
             if np.linalg.norm(x - x_old) < tol:
-                return {"success": True, "x": x, "iterations": iteration + 1, "error": None}
+                return {"success": True, "x": x, "iterations": iteration + 1, "error": None, "warning": warning}
 
         result_x = None if (np.any(np.isnan(x)) or np.any(np.isinf(x))) else x
         return {"success": False, "x": result_x, "iterations": max_iter,
-                "error": "Método não converge para este sistema"}
+                "error": "Método não converge para este sistema", "warning": warning}
     except Exception as e:
         return {"success": False, "x": None, "iterations": 0,
-                "error": f"Método falhou: {str(e)}"}
+                "error": f"Método falhou: {str(e)}", "warning": None}

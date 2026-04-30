@@ -21,12 +21,14 @@ def validate_integration_interval(a, b):
         return {"valid": False, "error": "a e b devem ser numéricos"}
 
 
-def validate_subintervals(n):
+def validate_subintervals(n, must_be_even=False):
     """Validate number of subintervals."""
     try:
         n = int(n)
         if n <= 0:
             return {"valid": False, "error": "n deve ser maior que 0"}
+        if must_be_even and n % 2 != 0:
+            return {"valid": False, "error": "n deve ser par para Simpson 1/3"}
         return {"valid": True, "error": None}
     except (TypeError, ValueError):
         return {"valid": False, "error": "n deve ser um inteiro"}

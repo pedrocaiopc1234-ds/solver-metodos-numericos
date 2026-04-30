@@ -31,11 +31,15 @@ def validate_time_interval(t0, tf):
 
 
 def validate_step_size(h):
-    """Validate step size h > 0."""
+    """Validate step size h > 0 and within reasonable bounds."""
     try:
         h = float(h)
         if h <= 0:
             return {"valid": False, "error": "h deve ser maior que 0"}
+        if h < 1e-10:
+            return {"valid": False, "error": "Passo h muito pequeno (mínimo: 1e-10). Pode gerar milhões de passos."}
+        if h > 100:
+            return {"valid": False, "error": "Passo h muito grande (máximo: 100). Resultados seriam imprecisos."}
         return {"valid": True, "error": None}
     except (TypeError, ValueError):
         return {"valid": False, "error": "h deve ser numérico"}

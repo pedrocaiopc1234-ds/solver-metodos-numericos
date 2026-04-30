@@ -101,12 +101,9 @@ def calculate(n_clicks, method, f_str, a, b, n):
             errors.append(v["error"])
 
         if method != "three_eight":
-            v = validate_subintervals(n)
+            v = validate_subintervals(n, must_be_even=(method == "simpson"))
             if not v["valid"]:
                 errors.append(v["error"])
-
-        if method == "simpson" and n % 2 != 0:
-            errors.append("Para Simpson 1/3, n deve ser par")
 
         if errors:
             return dbc.Alert("❌ " + " | ".join(errors), color="danger")

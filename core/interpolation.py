@@ -56,12 +56,9 @@ def newton_interpolation(x, y, x_eval):
         coefficients = [table[0, i] for i in range(n)]
 
         # Evaluate polynomial using Horner's method
-        result = coefficients[0]
-        for i in range(1, n):
-            term = coefficients[i]
-            for j in range(i):
-                term *= (x_eval - x[j])
-            result += term
+        result = coefficients[-1]
+        for i in range(n - 2, -1, -1):
+            result = result * (x_eval - x[i]) + coefficients[i]
 
         return {"success": True, "result": result, "coefficients": np.array(coefficients), "error": None}
     except Exception as e:

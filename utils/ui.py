@@ -31,17 +31,27 @@ SAFE_GLOBALS = {
 
 
 def parse_function(expr_str):
-    """Safely parse a math expression string into a callable f(x)."""
+    """Safely parse a math expression string into a callable f(x).
+    Raises ValueError if the expression produces complex numbers for a test value."""
     expr_str = expr_str.strip()
     code = compile(f"lambda x: {expr_str}", "<string>", "eval")
-    return eval(code, SAFE_GLOBALS.copy())
+    f = eval(code, SAFE_GLOBALS.copy())
+    test_val = f(1.0)
+    if isinstance(test_val, complex):
+        raise ValueError(f"Expressão retorna valor complexo ({test_val}). Use apenas funções reais.")
+    return f
 
 
 def parse_function_2d(expr_str):
-    """Safely parse a math expression string into a callable f(t, y)."""
+    """Safely parse a math expression string into a callable f(t, y).
+    Raises ValueError if the expression produces complex numbers for test values."""
     expr_str = expr_str.strip()
     code = compile(f"lambda t, y: {expr_str}", "<string>", "eval")
-    return eval(code, SAFE_GLOBALS.copy())
+    f = eval(code, SAFE_GLOBALS.copy())
+    test_val = f(0.0, 1.0)
+    if isinstance(test_val, complex):
+        raise ValueError(f"Expressão retorna valor complexo ({test_val}). Use apenas funções reais.")
+    return f
 
 
 def show_result_card(result_dict, title="Resultado"):

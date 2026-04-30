@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from core.linear_systems import lu_factorization, gaussian_elimination, gauss_seidel, gauss_jacobi
 from utils.dash_ui import display_matrix
-from validation.linear_systems_validation import validate_matrix, validate_vector, validate_matrix_vector_dimensions
+from validation.linear_systems_validation import validate_matrix, validate_vector, validate_matrix_vector_dimensions, validate_iterative_params
 
 dash.register_page(__name__, path="/sistemas-lineares", title="Sistemas Lineares", name="Sistemas Lineares")
 
@@ -106,10 +106,8 @@ def calculate(n_clicks, method, A_str, b_str, tol, max_iter):
                 errors.append(v["error"])
 
         if method in ("gauss_seidel", "gauss_jacobi"):
-            if tol <= 0:
-                errors.append("Tolerância deve ser maior que 0")
-            if max_iter <= 0:
-                errors.append("Máximo de iterações deve ser maior que 0")
+            iter_errors = validate_iterative_params(tol, max_iter)
+            errors.extend(iter_errors)
 
         if errors:
             return dbc.Alert("❌ " + " | ".join(errors), color="danger")
@@ -135,9 +133,13 @@ def calculate(n_clicks, method, A_str, b_str, tol, max_iter):
 
         if not result.get("success"):
             children.append(dbc.Alert(result.get("error", "Erro desconhecido"), color="danger"))
+            if result.get("warning"):
+                children.append(dbc.Alert(f"Aviso: {result['warning']}", color="warning"))
             return children
 
         children.append(dbc.Alert("Solução encontrada com sucesso!", color="success"))
+        if result.get("warning"):
+            children.append(dbc.Alert(f"Aviso: {result['warning']}", color="warning"))
 
         if method in ("gauss_seidel", "gauss_jacobi"):
             children.append(dbc.Row([

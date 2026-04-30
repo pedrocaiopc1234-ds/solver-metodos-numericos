@@ -76,6 +76,12 @@ def newton(f, df, x0, tol=1e-6, max_iter=100):
                         iterations_data (list), error (str or None)
     """
     try:
+        x0 = float(x0)
+
+        if np.isnan(x0) or np.isinf(x0):
+            return {"success": False, "root": None, "iterations": 0,
+                    "iterations_data": [],
+                    "error": "x0 deve ser um valor finito"}
         if tol <= 0:
             return {"success": False, "root": None, "iterations": 0,
                     "iterations_data": [],
@@ -128,6 +134,17 @@ def secant(f, x0, x1, tol=1e-6, max_iter=100):
                         iterations_data (list), error (str or None)
     """
     try:
+        x0 = float(x0)
+        x1 = float(x1)
+
+        if np.isnan(x0) or np.isinf(x0):
+            return {"success": False, "root": None, "iterations": 0,
+                    "iterations_data": [],
+                    "error": "x0 deve ser um valor finito"}
+        if np.isnan(x1) or np.isinf(x1):
+            return {"success": False, "root": None, "iterations": 0,
+                    "iterations_data": [],
+                    "error": "x1 deve ser um valor finito"}
         if tol <= 0:
             return {"success": False, "root": None, "iterations": 0,
                     "iterations_data": [],
