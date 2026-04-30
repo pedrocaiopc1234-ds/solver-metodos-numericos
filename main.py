@@ -51,6 +51,17 @@ def create_app():
     """Cria e configura a janela do aplicativo."""
     url = f"http://{HOST}:{PORT}"
 
+    # Aguarda o servidor Flask/Dash estar respondendo
+    import urllib.request
+    for _ in range(50):
+        try:
+            urllib.request.urlopen(url, timeout=0.2)
+            break
+        except Exception:
+            time.sleep(0.1)
+    else:
+        print("AVISO: Servidor não respondeu a tempo. Abrindo janela mesmo assim...")
+
     window_kwargs = {
         "title": TITLE,
         "width": WIDTH,
@@ -68,7 +79,7 @@ def create_app():
         window_kwargs["gui"] = "edgechromium"
 
     webview.create_window(url=url, **window_kwargs)
-    webview.start(debug=False, http_server=True)
+    webview.start(debug=False)
 
 
 def main():
