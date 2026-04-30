@@ -4,17 +4,24 @@ Aplicação desktop para resolução de métodos numéricos.
 
 ---
 
-## Windows — Instalação com um clique
+## Windows
 
-1. Baixe o arquivo `NumerPy.Solver.zip` da última release
-2. Extraia para qualquer pasta
-3. Clique duas vezes em `NumerPy Solver.exe`
+### Opção 1 — Baixar da Release (mais simples)
 
-Pronto. Não precisa instalar Python.
+1. Acesse a página de releases do projeto:
+   **https://github.com/pedrocaiopc1234-ds/solver-metodos-numericos/releases**
+
+2. Na última release, clique em `NumerPy.Solver.zip` para baixar
+
+3. Extraia o arquivo `.zip` para qualquer pasta
+
+4. Clique duas vezes em `NumerPy Solver.exe`
+
+> Não precisa instalar Python.
 
 ---
 
-## Executar pelo código (desenvolvedores)
+### Opção 2 — Gerar o executável localmente
 
 Requisito: Python 3.10+
 
@@ -25,31 +32,45 @@ cd solver-metodos-numericos
 
 # 2. Crie o ambiente virtual
 python -m venv venv
+venv\Scripts\activate
 
-# 3. Ative o ambiente
-venv\Scripts\activate        # Windows
-# source venv/bin/activate  # macOS/Linux
-
-# 4. Instale as dependências
+# 3. Instale as dependências
 pip install -r requirements.txt
-
-# 5. Execute
-python main.py              # App desktop
-python app.py               # Navegador web
-```
-
----
-
-## Criar o executável (.exe)
-
-Para gerar o arquivo de instalação:
-
-```bash
 pip install pyinstaller
+
+# 4. Gere o executável
 python build.py
 ```
 
-O executável será criado em `dist/NumerPy Solver/`.
+O `.exe` será criado em:
+```
+dist/NumerPy Solver/NumerPy Solver.exe
+```
+
+Para criar um atalho na área de trabalho:
+- Clique com o botão direito em `NumerPy Solver.exe`
+- **Enviar para > Área de Trabalho (criar atalho)**
+
+---
+
+### Opção 3 — Navegador (sem executável)
+
+```bash
+python app.py
+```
+
+Acesse no navegador: **http://127.0.0.1:8050**
+
+---
+
+## Publicar uma nova release
+
+Para disponibilizar o `.exe` para download:
+
+1. Gere o executável com `python build.py`
+2. Compacte a pasta `dist/NumerPy Solver/` em um `.zip`
+3. No GitHub, vá em **Releases > Draft a new release**
+4. Faça upload do `.zip` e publique
 
 ---
 
