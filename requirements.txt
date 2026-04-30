@@ -7,6 +7,9 @@ pandas
 
 # Desktop App (pywebview)
 pywebview
+pythonnet==3.1.0rc0
+proxy_tools
+bottle
 
 # Optional: criar executável
 pyinstaller; platform_system == "Windows"
