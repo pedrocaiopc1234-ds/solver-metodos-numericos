@@ -1,153 +1,59 @@
-# 📱 NumerPy Solver — Guia de Instalação
+# Instalação do NumerPy Solver
 
-## Aplicação Multiplataforma
-
-O NumerPy Solver funciona em **qualquer dispositivo**: PCs, notebooks, celulares e tablets.
+Aplicação desktop para resolução de métodos numéricos.
 
 ---
 
-## 🖥️ Desktop (Windows, macOS, Linux)
+## Windows — Instalação com um clique
 
-### Opção 1: Aplicação Desktop com pywebview (Recomendado)
+1. Baixe o arquivo `NumerPy.Solver.zip` da última release
+2. Extraia para qualquer pasta
+3. Clique duas vezes em `NumerPy Solver.exe`
 
-1. **Instale as dependências:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Execute o aplicativo:**
-   ```bash
-   python main.py
-   ```
-
-3. **O app abrirá em uma janela nativa** com a interface completa do solver.
-
-### Opção 2: Navegador Web
-
-1. **Inicie o servidor:**
-   ```bash
-   python app.py
-   ```
-
-2. **Acesse no navegador:**
-   ```
-   http://127.0.0.1:8050
-   ```
-
-### Opção 3: Executável (.exe no Windows) — Recomendado para distribuição
-
-1. **Instale as dependências de build:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Gere o ícone do app (opcional, mas recomendado):**
-   ```bash
-   python create_icon.py
-   ```
-
-3. **Crie o executável:**
-   ```bash
-   python build.py
-   ```
-
-4. **Encontre o .exe** em `dist/NumerPy Solver/NumerPy Solver.exe`.
-
-5. **Crie um atalho na área de trabalho:**
-   - Clique com o botão direito em `NumerPy Solver.exe`
-   - **Enviar para > Área de trabalho (criar atalho)**
-
-6. **Para distribuir:** compacte a pasta inteira `dist/NumerPy Solver/` e envie. O app funciona sem necessidade de instalar Python.
+Pronto. Não precisa instalar Python.
 
 ---
 
-## 📱 Mobile (Celular e Tablet)
+## Executar pelo código (desenvolvedores)
 
-### iOS (iPhone/iPad)
+Requisito: Python 3.10+
 
-1. **Abra Safari** e acesse a URL do servidor (ex: `https://seu-solver.onrender.com`)
+```bash
+# 1. Clone o repositório
+git clone https://github.com/pedrocaiopc1234-ds/solver-metodos-numericos.git
+cd solver-metodos-numericos
 
-2. **Toque no botão Compartilhar** (ícone de caixa com seta)
+# 2. Crie o ambiente virtual
+python -m venv venv
 
-3. **Selecione "Adicionar à Tela de Início"**
+# 3. Ative o ambiente
+venv\Scripts\activate        # Windows
+# source venv/bin/activate  # macOS/Linux
 
-4. **Pronto!** O ícone do NumerPy aparecerá na sua tela inicial como um app nativo.
+# 4. Instale as dependências
+pip install -r requirements.txt
 
-### Android
-
-1. **Abra o Chrome** e acesse a URL do servidor
-
-2. **Toque no menu (⋮)** e selecione **"Instalar aplicativo"** ou **"Adicionar à tela inicial"**
-
-3. **Confirme a instalação**
-
-4. **Pronto!** O app estará disponível na sua tela inicial.
-
----
-
-## 🌐 Hospedagem Online (Para acesso mobile remoto)
-
-Para que usuários mobile acessem o app de qualquer lugar, faça deploy em:
-
-### Render (Gratuito)
-1. Crie conta em https://render.com
-2. Conecte seu repositório GitHub
-3. Configure:
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `python app.py`
-4. Deploy automático!
-
-### Hugging Face Spaces (Gratuito)
-1. Crie um Space em https://huggingface.co/spaces
-2. Selecione "Docker" como SDK
-3. Crie um `Dockerfile`:
-   ```dockerfile
-   FROM python:3.10-slim
-   WORKDIR /app
-   COPY requirements.txt .
-   RUN pip install -r requirements.txt
-   COPY . .
-   CMD ["python", "app.py"]
-   ```
-4. Deploy automático!
-
-### Railway (Gratuito com limites)
-1. Acesse https://railway.app
-2. Conecte seu GitHub
-3. Deploy automático detectando `requirements.txt`
+# 5. Execute
+python main.py              # App desktop
+python app.py               # Navegador web
+```
 
 ---
 
-## 📋 Resumo das Plataformas
+## Criar o executável (.exe)
 
-| Dispositivo | Método | Instalação |
-|-------------|--------|------------|
-| Windows | .exe ou navegador | Baixe .exe ou acesse URL |
-| macOS | App ou navegador | `python main.py` ou URL |
-| Linux | App ou navegador | `python main.py` ou URL |
-| iOS (iPhone/iPad) | PWA via Safari | "Adicionar à Tela de Início" |
-| Android | PWA via Chrome | "Instalar aplicativo" |
+Para gerar o arquivo de instalação:
 
----
+```bash
+pip install pyinstaller
+python build.py
+```
 
-## 🔧 Solução de Problemas
-
-### O app não abre no desktop
-- Verifique se o Python 3.10+ está instalado
-- Execute `pip install -r requirements.txt` novamente
-- Tente `python app.py` e acesse via navegador
-
-### Não consigo instalar no celular
-- Verifique se está usando Safari (iOS) ou Chrome (Android)
-- O servidor precisa estar acessível via HTTPS para PWA
-- Use uma das opções de hospedagem acima
-
-### Erro de porta já em uso
-- Mude a porta no `app.py`: `app.run(port=8051)`
+O executável será criado em `dist/NumerPy Solver/`.
 
 ---
 
-## 📞 Suporte
+## Suporte
 
-Para dúvidas ou problemas, abra uma issue no GitHub:
+Encontrou algum problema? Abra uma issue em:
 https://github.com/pedrocaiopc1234-ds/solver-metodos-numericos/issues
