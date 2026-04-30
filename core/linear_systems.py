@@ -175,6 +175,12 @@ def gauss_seidel(A, b, tol=1e-10, max_iter=100):
                 if A[i, i] == 0:
                     return {"success": False, "x": None, "iterations": iteration,
                             "error": f"Divisão por zero: A[{i},{i}] = 0"}
+                if np.any(np.isinf(sigma)) or np.any(np.isnan(sigma)):
+                    return {"success": False, "x": None, "iterations": iteration,
+                            "error": "Método divergiu: overflow detectado"}
+                if abs(b[i] - sigma) > 1e150:
+                    return {"success": False, "x": None, "iterations": iteration,
+                            "error": "Método divergiu: valores crescendo sem limite"}
                 x[i] = (b[i] - sigma) / A[i, i]
 
             if np.linalg.norm(x - x_old) < tol:
@@ -228,6 +234,12 @@ def gauss_jacobi(A, b, tol=1e-10, max_iter=100):
                 if A[i, i] == 0:
                     return {"success": False, "x": None, "iterations": iteration,
                             "error": f"Divisão por zero: A[{i},{i}] = 0"}
+                if np.any(np.isinf(sigma)) or np.any(np.isnan(sigma)):
+                    return {"success": False, "x": None, "iterations": iteration,
+                            "error": "Método divergiu: overflow detectado"}
+                if abs(b[i] - sigma) > 1e150:
+                    return {"success": False, "x": None, "iterations": iteration,
+                            "error": "Método divergiu: valores crescendo sem limite"}
                 x[i] = (b[i] - sigma) / A[i, i]
 
             if np.linalg.norm(x - x_old) < tol:
