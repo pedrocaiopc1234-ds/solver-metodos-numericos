@@ -2,7 +2,15 @@
 
 import unittest
 import math
+import numpy as np
 from core.interpolation import newton_interpolation, lagrange_interpolation
+
+# Validação por biblioteca: compara com scipy.interpolate
+try:
+    from scipy import interpolate
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
 
 
 class TestInterpolation(unittest.TestCase):
@@ -311,3 +319,99 @@ class TestLagrangeInterpolationRobustness(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ==============================================================================
+# VALIDAÇÃO POR BIBLIOTECA - Compara implementações do core com scipy.interpolate
+# ==============================================================================
+
+@unittest.skipUnless(SCIPY_AVAILABLE, "scipy não disponível")
+class TestInterpolationValidacaoBiblioteca(unittest.TestCase):
+    """
+    Testes que comparam as implementações do core/ com scipy.interpolate.
+    Garante que os métodos são compatíveis com as implementações de referência.
+    """
+
+    def test_lagrange_vs_scipy_lagrange(self):
+        """Lagrange: core vs scipy.interpolate.lagrange"""
+        x = [1, 2, 3]
+        y = [1, 4, 9]  # y = x^2
+        x_eval = 2.5
+
+        # Nossa implementação
+        core_result = lagrange_interpolation(x, y, x_eval)
+
+        # scipy.interpolate.lagrange retorna um polinômio
+        poly = interpolate.lagrange(x, y)
+        scipy_result = poly(x_eval)
+
+        self.assertTrue(core_result["success"])
+        self.assertAlmostEqual(core_result["result"], scipy_result, places=5,
+                               msg=f"core lagrange={core_result['result']} != scipy={scipy_result}")
+
+    def test_lagrange_vs_scipy_multiple_cases(self):
+        """Lagrange: valida com múltiplos casos"""
+        test_cases = [
+            ([0, 1, 2], [0, 1, 4], 1.5),      # x^2
+            ([0, 1, 2], [0, 1, 8], 1.5),      # x^3
+            ([-1, 0, 1], [1, 0, 1], 0.5),     # x^2
+        ]
+        for x, y, x_eval in test_cases:
+            core_result = lagrange_interpolation(x, y, x_eval)
+            poly = interpolate.lagrange(x, y)
+            scipy_result = poly(x_eval)
+            if core_result["success"]:
+                self.assertAlmostEqual(core_result["result"], scipy_result, places=4)
+
+    def test_newton_vs_lagrange_same_result(self):
+        """Newton e Lagrange devem dar o mesmo resultado (ambos interpolam o mesmo polinômio)"""
+        x = [1, 2, 3, 4]
+        y = [1, 4, 9, 16]  # x^2
+        x_eval = 2.5
+
+        newton_result = newton_interpolation(x, y, x_eval)
+        lagrange_result = lagrange_interpolation(x, y, x_eval)
+        poly = interpolate.lagrange(x, y)
+        scipy_result = poly(x_eval)
+
+        self.assertTrue(newton_result["success"])
+        self.assertTrue(lagrange_result["success"])
+
+        # Todos devem convergir para o mesmo valor
+        self.assertAlmostEqual(newton_result["result"], lagrange_result["result"], places=6)
+        self.assertAlmostEqual(newton_result["result"], scipy_result, places=5)
+
+    def test_lagrange_scipy_exact_at_nodes(self):
+        """Lagrange: deve retornar valor exato nos nós"""
+        x = [1, 2, 3]
+        y = [2, 4, 6]
+
+        for i, xi in enumerate(x):
+            core_result = lagrange_interpolation(x, y, xi)
+            poly = interpolate.lagrange(x, y)
+            scipy_result = poly(xi)
+
+            self.assertTrue(core_result["success"])
+            self.assertAlmostEqual(core_result["result"], y[i], places=10)
+            self.assertAlmostEqual(core_result["result"], scipy_result, places=10)
+
+    def test_both_methods_vs_scipy_trig_data(self):
+        """Newton e Lagrange com dados trigonométricos vs scipy"""
+        x = [0, math.pi/6, math.pi/3, math.pi/2]
+        y = [math.sin(xi) for xi in x]
+        x_eval = math.pi/4
+
+        newton_result = newton_interpolation(x, y, x_eval)
+        lagrange_result = lagrange_interpolation(x, y, x_eval)
+        poly = interpolate.lagrange(x, y)
+        scipy_result = poly(x_eval)
+
+        self.assertTrue(newton_result["success"])
+        self.assertTrue(lagrange_result["success"])
+
+        # Valor esperado: sin(pi/4) = sqrt(2)/2
+        expected = math.sin(math.pi/4)
+        # Interpolação polinomial de sin(x) não é exata - tolerância maior
+        self.assertAlmostEqual(newton_result["result"], expected, places=2)
+        self.assertAlmostEqual(lagrange_result["result"], expected, places=2)
+        self.assertAlmostEqual(newton_result["result"], scipy_result, places=4)

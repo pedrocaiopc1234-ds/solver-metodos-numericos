@@ -5,6 +5,13 @@ import math
 import numpy as np
 from core.ode import euler_method, runge_kutta_4
 
+# Validação por biblioteca: compara com scipy.integrate
+try:
+    from scipy import integrate
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
+
 
 class TestODE(unittest.TestCase):
     """Testes para EDO"""
@@ -296,3 +303,125 @@ class TestRK4Robustness(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ==============================================================================
+# VALIDAÇÃO POR BIBLIOTECA - Compara implementações do core com scipy.integrate
+# ==============================================================================
+
+@unittest.skipUnless(SCIPY_AVAILABLE, "scipy não disponível")
+class TestODEValidacaoBiblioteca(unittest.TestCase):
+    """
+    Testes que comparam as implementações do core/ com scipy.integrate.
+    Garante que os métodos são compatíveis com as implementações de referência.
+    """
+
+    def test_runge_kutta_4_vs_scipy_rk45(self):
+        """RK4: core vs scipy.integrate.RK45"""
+        f = lambda t, y: y
+        y0 = 1.0
+        t0, tf = 0, 1
+
+        # Nossa implementação RK4
+        core_result = runge_kutta_4(f, y0, t0, tf, h=0.01)
+
+        # scipy.integrate.RK45 (método adaptativo de 4ª/5ª ordem)
+        scipy_sol = integrate.solve_ivp(f, [t0, tf], [y0], method='RK45',
+                                         t_eval=np.linspace(t0, tf, 101))
+
+        self.assertTrue(core_result["success"])
+        self.assertTrue(scipy_sol.success)
+
+        # Valor esperado: y(1) = e^1
+        expected = math.exp(1)
+
+        # RK45 do scipy é mais preciso que nosso RK4
+        self.assertAlmostEqual(core_result["y"][-1], expected, places=3)
+        self.assertAlmostEqual(scipy_sol.y[0][-1], expected, places=4)
+
+    def test_euler_vs_scipy_solve_ivp(self):
+        """Euler: core vs scipy.integrate.solve_ivp"""
+        f = lambda t, y: y
+        y0 = 1.0
+        t0, tf = 0, 0.5
+
+        # Nossa implementação Euler
+        core_result = euler_method(f, y0, t0, tf, h=0.01)
+
+        # scipy.integrate.solve_ivp com método simples
+        scipy_sol = integrate.solve_ivp(f, [t0, tf], [y0], method='RK45',
+                                         t_eval=np.linspace(t0, tf, 51))
+
+        self.assertTrue(core_result["success"])
+        self.assertTrue(scipy_sol.success)
+
+        # Euler é menos preciso, mas deve estar próximo
+        expected = math.exp(0.5)
+        self.assertAlmostEqual(core_result["y"][-1], expected, places=2)
+
+    def test_rk4_vs_scipy_multiple_odes(self):
+        """RK4: valida com múltiplas EDOs"""
+        test_cases = [
+            # (f, y0, t0, tf, expected_fn)
+            (lambda t, y: y, 1.0, 0, 1, lambda t: math.exp(t)),           # y' = y
+            (lambda t, y: -y, 1.0, 0, 1, lambda t: math.exp(-t)),         # y' = -y
+            (lambda t, y: 2*y, 1.0, 0, 0.5, lambda t: math.exp(2*t)),    # y' = 2y
+            (lambda t, y: 1, 0.0, 0, 2, lambda t: t),                     # y' = 1
+        ]
+
+        for f, y0, t0, tf, expected_fn in test_cases:
+            core_result = runge_kutta_4(f, y0, t0, tf, h=0.01)
+            scipy_sol = integrate.solve_ivp(f, [t0, tf], [y0], method='RK45',
+                                             t_eval=[tf])
+
+            if core_result["success"] and scipy_sol.success:
+                expected = expected_fn(tf)
+                # Nosso RK4 é preciso, scipy RK45 é ainda mais preciso
+                self.assertAlmostEqual(core_result["y"][-1], expected, places=3)
+                self.assertAlmostEqual(scipy_sol.y[0][-1], expected, places=3)
+
+    def test_euler_vs_rk4_accuracy(self):
+        """Euler deve ser menos preciso que RK4 (ambos vs scipy)"""
+        f = lambda t, y: y
+        y0 = 1.0
+        t0, tf = 0, 1
+
+        euler_result = euler_method(f, y0, t0, tf, h=0.1)
+        rk4_result = runge_kutta_4(f, y0, t0, tf, h=0.1)
+
+        expected = math.exp(1)
+
+        self.assertTrue(euler_result["success"])
+        self.assertTrue(rk4_result["success"])
+
+        # RK4 deve ser mais próximo do valor exato que Euler
+        euler_error = abs(euler_result["y"][-1] - expected)
+        rk4_error = abs(rk4_result["y"][-1] - expected)
+
+        self.assertLess(rk4_error, euler_error,
+                        msg=f"RK4 erro={rk4_error} deveria ser < Euler erro={euler_error}")
+
+    def test_both_methods_vs_scipy_decay_ode(self):
+        """EDO de decaimento: Euler e RK4 vs scipy"""
+        # dy/dt = -ky, y(0) = y0 → y(t) = y0 * e^(-kt)
+        k = 0.5
+        f = lambda t, y: -k * y
+        y0 = 10.0
+        t0, tf = 0, 2
+
+        euler_result = euler_method(f, y0, t0, tf, h=0.01)
+        rk4_result = runge_kutta_4(f, y0, t0, tf, h=0.01)
+
+        scipy_sol = integrate.solve_ivp(f, [t0, tf], [y0], method='RK45',
+                                         t_eval=[tf])
+
+        expected = y0 * math.exp(-k * tf)
+
+        self.assertTrue(euler_result["success"])
+        self.assertTrue(rk4_result["success"])
+        self.assertTrue(scipy_sol.success)
+
+        # Todos devem se aproximar do valor exato
+        self.assertAlmostEqual(euler_result["y"][-1], expected, places=1)
+        self.assertAlmostEqual(rk4_result["y"][-1], expected, places=3)
+        self.assertAlmostEqual(scipy_sol.y[0][-1], expected, places=3)

@@ -2,7 +2,15 @@
 
 import unittest
 import math
+import numpy as np
 from core.integration import simpson, trapezoidal_repeated, three_eight_method
+
+# Validação por biblioteca: compara com scipy.integrate
+try:
+    from scipy import integrate
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
 
 
 class TestIntegration(unittest.TestCase):
@@ -438,3 +446,142 @@ class TestThreeEightRobustness(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ==============================================================================
+# VALIDAÇÃO POR BIBLIOTECA - Compara implementações do core com scipy.integrate
+# ==============================================================================
+
+@unittest.skipUnless(SCIPY_AVAILABLE, "scipy não disponível")
+class TestIntegrationValidacaoBiblioteca(unittest.TestCase):
+    """
+    Testes que comparam as implementações do core/ com scipy.integrate.
+    Garante que os métodos são compatíveis com as implementações de referência.
+    """
+
+    def test_simpson_vs_scipy_simpson(self):
+        """Simpson 1/3: core vs scipy.integrate.simpson"""
+        f = lambda x: x**2
+        a, b = 0, 2
+        n = 10  # deve ser par
+
+        # Nossa implementação
+        core_result = simpson(f, a, b, n=n)
+
+        # scipy.integrate.simpson usa o mesmo algoritmo
+        x = np.linspace(a, b, n + 1)
+        y = [f(xi) for xi in x]
+        scipy_result = integrate.simpson(y, x)
+
+        self.assertTrue(core_result["success"])
+        self.assertAlmostEqual(core_result["result"], scipy_result, places=6,
+                               msg=f"core simpson={core_result['result']} != scipy={scipy_result}")
+
+    def test_simpson_vs_scipy_multiple_functions(self):
+        """Simpson: valida com múltiplas funções"""
+        test_cases = [
+            (lambda x: x**2, 0, 2, 10),           # x^2
+            (lambda x: math.sin(x), 0, math.pi, 100),  # sin(x)
+            (lambda x: math.exp(x), 0, 1, 100),   # e^x
+            (lambda x: 1/(1 + x**2), 0, 1, 100),  # arctan
+        ]
+        for f, a, b, n in test_cases:
+            core_result = simpson(f, a, b, n=n)
+            x = np.linspace(a, b, n + 1)
+            y = [f(xi) for xi in x]
+            scipy_result = integrate.simpson(y, x)
+            if core_result["success"]:
+                self.assertAlmostEqual(core_result["result"], scipy_result, places=4)
+
+    def test_trapezoidal_vs_scipy_trapezoid(self):
+        """Trapezoidal: core vs scipy.integrate.trapezoid"""
+        f = lambda x: x**2
+        a, b = 0, 2
+        n = 100
+
+        # Nossa implementação
+        core_result = trapezoidal_repeated(f, a, b, n=n)
+
+        # scipy.integrate.trapezoid (antigo trapz)
+        x = np.linspace(a, b, n + 1)
+        y = [f(xi) for xi in x]
+        scipy_result = integrate.trapezoid(y, x)
+
+        self.assertTrue(core_result["success"])
+        self.assertAlmostEqual(core_result["result"], scipy_result, places=5,
+                               msg=f"core trapezoidal={core_result['result']} != scipy={scipy_result}")
+
+    def test_trapezoidal_vs_scipy_multiple_functions(self):
+        """Trapezoidal: valida com múltiplas funções"""
+        test_cases = [
+            (lambda x: x**2, 0, 2, 100),
+            (lambda x: math.sin(x), 0, math.pi, 1000),
+            (lambda x: math.exp(x), 0, 1, 1000),
+        ]
+        for f, a, b, n in test_cases:
+            core_result = trapezoidal_repeated(f, a, b, n=n)
+            x = np.linspace(a, b, n + 1)
+            y = [f(xi) for xi in x]
+            scipy_result = integrate.trapezoid(y, x)
+            if core_result["success"]:
+                self.assertAlmostEqual(core_result["result"], scipy_result, places=3)
+
+    def test_all_methods_same_integral(self):
+        """Todos os métodos devem calcular a mesma integral para f(x)=x²"""
+        f = lambda x: x**2
+        a, b = 0, 2
+
+        # Valor exato: ∫₀² x² dx = 8/3
+        exact = 8/3
+
+        simpson_result = simpson(f, a, b, n=100)
+        trap_result = trapezoidal_repeated(f, a, b, n=1000)
+
+        # scipy para Simpson
+        x = np.linspace(a, b, 101)
+        y = [f(xi) for xi in x]
+        scipy_simpson = integrate.simpson(y, x)
+
+        self.assertTrue(simpson_result["success"])
+        self.assertTrue(trap_result["success"])
+
+        # Simpson deve ser mais próximo do exato (é exato para polinômios até grau 3)
+        self.assertAlmostEqual(simpson_result["result"], exact, places=5)
+        self.assertAlmostEqual(scipy_simpson, exact, places=5)
+
+    def test_simpson_exact_for_cubic(self):
+        """Simpson é exato para polinômios até grau 3"""
+        # ∫₀² x³ dx = 4
+        f = lambda x: x**3
+        core_result = simpson(f, 0, 2, n=10)
+        x = np.linspace(0, 2, 11)
+        y = [f(xi) for xi in x]
+        scipy_result = integrate.simpson(y, x)
+
+        self.assertTrue(core_result["success"])
+        self.assertAlmostEqual(core_result["result"], 4.0, places=5)
+        self.assertAlmostEqual(core_result["result"], scipy_result, places=10)
+
+    def test_three_eight_vs_simpson_comparison(self):
+        """3/8 deve ter precisão similar ao Simpson 1/3"""
+        f = lambda x: x**2
+        a, b = 0, 3
+
+        # 3/8 method (core)
+        three_eight_result = three_eight_method(f, a, b)
+
+        # Simpson 1/3 (core) - n=6 (múltiplo de 2 e próximo de 3 subintervalos)
+        simpson_result = simpson(f, a, b, n=6)
+
+        # scipy Simpson
+        x = np.linspace(a, b, 4)  # 4 pontos = 3 subintervalos
+        y = [f(xi) for xi in x]
+        scipy_result = integrate.simpson(y, x)
+
+        # Valor exato: ∫₀³ x² dx = 9
+        exact = 9.0
+
+        if three_eight_result["success"]:
+            self.assertAlmostEqual(three_eight_result["result"], exact, places=3)
+        if simpson_result["success"]:
+            self.assertAlmostEqual(simpson_result["result"], scipy_result, places=5)

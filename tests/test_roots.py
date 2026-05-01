@@ -2,7 +2,15 @@
 
 import unittest
 import math
+import numpy as np
 from core.roots import bisection, newton, secant
+
+# Validação por biblioteca: compara com scipy.optimize
+try:
+    from scipy import optimize
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
 
 
 class TestRootsMethods(unittest.TestCase):
@@ -472,3 +480,133 @@ class TestSecantRobustness(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ==============================================================================
+# VALIDAÇÃO POR BIBLIOTECA - Compara implementações do core com scipy.optimize
+# ==============================================================================
+
+@unittest.skipUnless(SCIPY_AVAILABLE, "scipy não disponível")
+class TestRootsValidacaoBiblioteca(unittest.TestCase):
+    """
+    Testes que comparam as implementações do core/ com scipy.optimize.
+    Garante que os métodos são compatíveis com as implementações de referência.
+    """
+
+    def test_bisection_vs_scipy_bisect(self):
+        """Bisecção: core vs scipy.optimize.bisect"""
+        f = lambda x: x**2 - 2
+
+        # Nossa implementação
+        core_result = bisection(f, 0, 2, tol=1e-8)
+
+        # scipy (usa o mesmo algoritmo de bisecção)
+        scipy_root = optimize.bisect(f, 0, 2, xtol=1e-8)
+
+        self.assertTrue(core_result["success"])
+        self.assertAlmostEqual(core_result["root"], scipy_root, places=6,
+                               msg=f"core bisection={core_result['root']} != scipy={scipy_root}")
+
+    def test_bisection_vs_scipy_multiple_functions(self):
+        """Bisecção: valida com múltiplas funções"""
+        test_cases = [
+            (lambda x: x**3 - 8, 0, 3, 2.0),           # x³ = 8
+            (lambda x: math.exp(x) - 2, -1, 2, math.log(2)),  # e^x = 2
+            (lambda x: math.sin(x) - 0.5, 0, 1, math.pi/6),   # sin(x) = 0.5
+        ]
+        for f, a, b, expected in test_cases:
+            core_result = bisection(f, a, b, tol=1e-8)
+            scipy_root = optimize.bisect(f, a, b, xtol=1e-8)
+            self.assertTrue(core_result["success"], f"Falhou para {f.__doc__ or str(f)}")
+            self.assertAlmostEqual(core_result["root"], scipy_root, places=5)
+
+    def test_newton_vs_scipy_newton(self):
+        """Newton: core vs scipy.optimize.newton"""
+        f = lambda x: x**2 - 2
+        df = lambda x: 2*x
+
+        # Nossa implementação
+        core_result = newton(f, df, 1.5, tol=1e-8)
+
+        # scipy.optimize.newton com fprime usa Newton-Raphson
+        scipy_root = optimize.newton(f, 1.5, fprime=df, tol=1e-8)
+
+        self.assertTrue(core_result["success"])
+        self.assertAlmostEqual(core_result["root"], scipy_root, places=6,
+                               msg=f"core newton={core_result['root']} != scipy={scipy_root}")
+
+    def test_newton_vs_scipy_multiple_functions(self):
+        """Newton: valida com múltiplas funções"""
+        test_cases = [
+            # (f, df, x0, expected)
+            (lambda x: x**3 - 8, lambda x: 3*x**2, 3.0, 2.0),
+            (lambda x: math.exp(x) - 1, lambda x: math.exp(x), 1.0, 0.0),
+            (lambda x: math.cos(x), lambda x: -math.sin(x), 1.0, math.pi/2),
+        ]
+        for f, df, x0, expected in test_cases:
+            core_result = newton(f, df, x0, tol=1e-8, max_iter=100)
+            scipy_root = optimize.newton(f, x0, fprime=df, tol=1e-8, maxiter=100)
+            if core_result["success"]:
+                self.assertAlmostEqual(core_result["root"], scipy_root, places=5)
+
+    def test_secant_vs_scipy_secant(self):
+        """Secante: core vs scipy.optimize.newton (sem derivada)"""
+        f = lambda x: x**2 - 2
+
+        # Nossa implementação
+        core_result = secant(f, 1.0, 2.0, tol=1e-8)
+
+        # scipy.optimize.newton sem fprime usa método da secante
+        scipy_root = optimize.newton(f, 1.5, tol=1e-8, maxiter=100)
+
+        self.assertTrue(core_result["success"])
+        self.assertAlmostEqual(core_result["root"], scipy_root, places=5,
+                               msg=f"core secant={core_result['root']} != scipy={scipy_root}")
+
+    def test_secant_vs_scipy_multiple_functions(self):
+        """Secante: valida com múltiplas funções"""
+        test_cases = [
+            (lambda x: x**3 - 8, 1.5, 2.5),
+            (lambda x: math.exp(x) - 2, 0, 1),
+            (lambda x: math.sin(x) - 0.5, 0, 1),
+        ]
+        for f, x0, x1 in test_cases:
+            core_result = secant(f, x0, x1, tol=1e-8, max_iter=100)
+            # scipy usa ponto inicial único para secante
+            scipy_root = optimize.newton(f, (x0 + x1) / 2, tol=1e-8, maxiter=100)
+            if core_result["success"]:
+                self.assertAlmostEqual(core_result["root"], scipy_root, places=4)
+
+    def test_all_methods_same_root(self):
+        """Todos os métodos devem encontrar a mesma raiz para f(x)=x²-2"""
+        f = lambda x: x**2 - 2
+        df = lambda x: 2*x
+
+        bisection_result = bisection(f, 0, 2)
+        newton_result = newton(f, df, 1.5)
+        secant_result = secant(f, 1.0, 2.0)
+        scipy_root = optimize.bisect(f, 0, 2, xtol=1e-8)
+
+        self.assertTrue(bisection_result["success"])
+        self.assertTrue(newton_result["success"])
+        self.assertTrue(secant_result["success"])
+
+        # Todas as implementações devem convergir para sqrt(2)
+        expected = math.sqrt(2)
+        self.assertAlmostEqual(bisection_result["root"], expected, places=5)
+        self.assertAlmostEqual(newton_result["root"], expected, places=5)
+        self.assertAlmostEqual(secant_result["root"], expected, places=4)
+        self.assertAlmostEqual(scipy_root, expected, places=8)
+
+    def test_edge_case_identical_results(self):
+        """Caso extremo: todas implementações falham ou succeedem juntas"""
+        # Função sem raiz no intervalo
+        f = lambda x: x**2 + 1
+
+        core_result = bisection(f, -1, 1)
+        # scipy lança ValueError quando não há mudança de sinal
+        with self.assertRaises(ValueError):
+            optimize.bisect(f, -1, 1)
+
+        self.assertFalse(core_result["success"])
+        self.assertIn("não muda de sinal", core_result["error"])

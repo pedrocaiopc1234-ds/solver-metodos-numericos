@@ -4,6 +4,8 @@ dash-bootstrap-components
 numpy
 plotly
 pandas
+scipy
+scipy
 
 # Desktop App (pywebview)
 pywebview

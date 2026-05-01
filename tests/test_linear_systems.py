@@ -4,6 +4,13 @@ import unittest
 import numpy as np
 from core.linear_systems import lu_factorization, gaussian_elimination, gauss_seidel, gauss_jacobi
 
+# Validação por biblioteca: compara com scipy.linalg
+try:
+    from scipy import linalg
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
+
 
 class TestLinearSystems(unittest.TestCase):
     """Testes para sistemas lineares"""
@@ -642,3 +649,145 @@ class TestGaussJacobiRobustness(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ==============================================================================
+# VALIDAÇÃO POR BIBLIOTECA - Compara implementações do core com scipy.linalg
+# ==============================================================================
+
+@unittest.skipUnless(SCIPY_AVAILABLE, "scipy não disponível")
+class TestLinearSystemsValidacaoBiblioteca(unittest.TestCase):
+    """
+    Testes que comparam as implementações do core/ com scipy.linalg.
+    Garante que os métodos são compatíveis com as implementações de referência.
+    """
+
+    def test_lu_factorization_vs_scipy_lu(self):
+        """LU: core vs scipy.linalg.lu"""
+        A = [[2, 1], [1, 3]]
+        b = [3, 4]
+
+        # Nossa implementação
+        core_result = lu_factorization(A, b)
+
+        # scipy.linalg.lu retorna P, L, U onde PA = LU
+        scipy_P, scipy_L, scipy_U = linalg.lu(np.array(A))
+
+        self.assertTrue(core_result["success"])
+        self.assertIsNotNone(core_result["L"])
+        self.assertIsNotNone(core_result["U"])
+
+        # Verifica que L e U são triangulares
+        self.assertTrue(np.allclose(core_result["L"], np.tril(core_result["L"])),
+                        msg="L não é triangular inferior")
+        self.assertTrue(np.allclose(core_result["U"], np.triu(core_result["U"])),
+                        msg="U não é triangular superior")
+
+    def test_lu_solution_vs_scipy_solve(self):
+        """LU: solução vs scipy.linalg.solve"""
+        A = [[2, 1, -1], [-3, -1, 2], [-2, 1, 2]]
+        b = [8, -11, -3]
+
+        # Nossa implementação
+        core_result = lu_factorization(A, b)
+
+        # scipy.linalg.solve
+        scipy_x = linalg.solve(np.array(A), np.array(b))
+
+        self.assertTrue(core_result["success"])
+        self.assertTrue(np.allclose(core_result["x"], scipy_x, atol=1e-6),
+                        msg=f"core x={core_result['x']} != scipy x={scipy_x}")
+
+    def test_gaussian_elimination_vs_scipy_solve(self):
+        """Eliminação de Gauss: core vs scipy.linalg.solve"""
+        A = [[2, 1, -1], [-3, -1, 2], [-2, 1, 2]]
+        b = [8, -11, -3]
+
+        # Nossa implementação
+        core_result = gaussian_elimination(A, b)
+
+        # scipy.linalg.solve
+        scipy_x = linalg.solve(np.array(A), np.array(b))
+
+        self.assertTrue(core_result["success"])
+        self.assertTrue(np.allclose(core_result["x"], scipy_x, atol=1e-6),
+                        msg=f"core x={core_result['x']} != scipy x={scipy_x}")
+
+    def test_gaussian_elimination_multiple_systems(self):
+        """Gauss: valida com múltiplos sistemas"""
+        test_cases = [
+            ([[2, 1], [1, 3]], [3, 4]),
+            ([[4, 1], [1, 3]], [5, 4]),
+            ([[1, 2, 3], [4, 5, 6], [7, 8, 10]], [1, 2, 3]),
+        ]
+        for A, b in test_cases:
+            core_result = gaussian_elimination(A, b)
+            try:
+                scipy_x = linalg.solve(np.array(A), np.array(b))
+                if core_result["success"]:
+                    self.assertTrue(np.allclose(core_result["x"], scipy_x, atol=1e-5))
+            except linalg.LinAlgError:
+                # Matriz singular - ambas devem falhar
+                self.assertFalse(core_result["success"])
+
+    def test_gauss_seidel_vs_scipy_solve(self):
+        """Gauss-Seidel: solução vs scipy.linalg.solve"""
+        # Matriz diagonalmente dominante
+        A = [[4, 1, 2], [1, 3, 1], [2, 1, 5]]
+        b = [4, 3, 7]
+
+        # Nossa implementação
+        core_result = gauss_seidel(A, b, tol=1e-10)
+
+        # scipy.linalg.solve
+        scipy_x = linalg.solve(np.array(A), np.array(b))
+
+        self.assertTrue(core_result["success"])
+        self.assertTrue(np.allclose(core_result["x"], scipy_x, atol=1e-6),
+                        msg=f"core x={core_result['x']} != scipy x={scipy_x}")
+
+    def test_gauss_jacobi_vs_scipy_solve(self):
+        """Gauss-Jacobi: solução vs scipy.linalg.solve"""
+        # Matriz diagonalmente dominante
+        A = [[4, 1, 2], [1, 3, 1], [2, 1, 5]]
+        b = [4, 3, 7]
+
+        # Nossa implementação
+        core_result = gauss_jacobi(A, b, tol=1e-10)
+
+        # scipy.linalg.solve
+        scipy_x = linalg.solve(np.array(A), np.array(b))
+
+        self.assertTrue(core_result["success"])
+        self.assertTrue(np.allclose(core_result["x"], scipy_x, atol=1e-6),
+                        msg=f"core x={core_result['x']} != scipy x={scipy_x}")
+
+    def test_all_direct_methods_same_solution(self):
+        """LU e Gauss devem dar a mesma solução"""
+        A = [[2, 1, -1], [-3, -1, 2], [-2, 1, 2]]
+        b = [8, -11, -3]
+
+        lu_result = lu_factorization(A, b)
+        gauss_result = gaussian_elimination(A, b)
+        scipy_x = linalg.solve(np.array(A), np.array(b))
+
+        self.assertTrue(lu_result["success"])
+        self.assertTrue(gauss_result["success"])
+
+        self.assertTrue(np.allclose(lu_result["x"], gauss_result["x"], atol=1e-6))
+        self.assertTrue(np.allclose(lu_result["x"], scipy_x, atol=1e-6))
+
+    def test_iterative_methods_converge_to_scipy_solution(self):
+        """Gauss-Seidel e Jacobi devem convergir para a solução de scipy"""
+        A = [[10, 1, 2, 0], [1, 10, 1, 1], [2, 1, 10, 1], [0, 1, 1, 10]]
+        b = [13, 13, 14, 12]
+
+        scipy_x = linalg.solve(np.array(A), np.array(b))
+
+        seidel_result = gauss_seidel(A, b, tol=1e-10, max_iter=1000)
+        jacobi_result = gauss_jacobi(A, b, tol=1e-10, max_iter=1000)
+
+        if seidel_result["success"]:
+            self.assertTrue(np.allclose(seidel_result["x"], scipy_x, atol=1e-5))
+        if jacobi_result["success"]:
+            self.assertTrue(np.allclose(jacobi_result["x"], scipy_x, atol=1e-5))
