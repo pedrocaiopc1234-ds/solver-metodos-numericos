@@ -99,45 +99,50 @@ def trapezoidal_repeated(f, a, b, n=4):
                 "error": f"Método falhou: {str(e)}"}
 
 
-def three_eight_method(f, a, b):
+def three_eight_method(f, a, b, n=3):
     """
-    Simpson's 3/8 rule for numerical integration.
+    Simpson's 3/8 rule for numerical integration (repeated version).
 
     Args:
         f: function to integrate
         a, b: integration interval [a, b]
+        n: number of subintervals (must be multiple of 3)
 
     Returns:
         dict with keys: success (bool), result (float or None), error (str or None)
     """
     try:
         a, b = float(a), float(b)
+        n = int(n)
 
         if a == b:
             return {"success": True, "result": 0.0, "error": None}
 
-        if a >= b:
+        if a > b:
             return {"success": False, "result": None,
                     "error": "a deve ser menor que b"}
 
-        h = (b - a) / 3
+        if n <= 0:
+            return {"success": False, "result": None,
+                    "error": "n deve ser maior que 0"}
 
-        x0 = a
-        x1 = a + h
-        x2 = a + 2 * h
-        x3 = b
+        if n % 3 != 0:
+            return {"success": False, "result": None,
+                    "error": "n deve ser multiplo de 3 para Simpson 3/8"}
 
-        y0 = f(x0)
-        y1 = f(x1)
-        y2 = f(x2)
-        y3 = f(x3)
+        h = (b - a) / n
+        x = np.linspace(a, b, n + 1)
 
-        for val in [y0, y1, y2, y3]:
-            if np.isnan(val) or np.isinf(val):
-                return {"success": False, "result": None,
-                        "error": "Função retornou valores inválidos (NaN ou Inf)"}
+        # Evaluate function
+        y = np.array([f(xi) for xi in x])
 
-        result = 3 * h / 8 * (y0 + 3 * y1 + 3 * y2 + y3)
+        # Check for invalid values
+        if np.any(np.isnan(y)) or np.any(np.isinf(y)):
+            return {"success": False, "result": None,
+                    "error": "Função retornou valores inválidos (NaN ou Inf)"}
+
+        # Simpson 3/8 formula (repeated)
+        result = 3 * h / 8 * (y[0] + 3 * np.sum(y[1:-1:3]) + 3 * np.sum(y[2:-1:3]) + 2 * np.sum(y[3:-1:3]) + y[-1])
 
         return {"success": True, "result": result, "error": None}
     except Exception as e:

@@ -23,7 +23,8 @@
       "Bash(PYTHONPATH=. venv/Scripts/python.exe compare_linear_systems.py)",
       "Bash(PYTHONPATH=. venv/Scripts/python.exe compare_ode.py)",
       "Bash(chcp 65001)",
-      "Bash(PYTHONPATH=. venv/Scripts/python.exe compare_interpolation.py)"
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe compare_interpolation.py)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe comparation/compare_integration.py)"
     ]
   }
 }
