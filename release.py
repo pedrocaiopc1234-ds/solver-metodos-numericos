@@ -54,15 +54,21 @@ def run(cmd, capture=False):
         return result.returncode == 0
 
 
-def create_zip(source_folder, zip_path):
-    """Cria arquivo ZIP com o conteúdo da pasta (Windows)."""
+def create_zip(source_path, zip_path):
+    """Cria arquivo ZIP. source_path pode ser uma pasta (--onedir) ou um arquivo (--onefile)."""
     print(f"Criando ZIP: {zip_path}")
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for root, dirs, files in os.walk(source_folder):
-            for file in files:
-                file_path = os.path.join(root, file)
-                arcname = os.path.relpath(file_path, os.path.dirname(source_folder))
-                zipf.write(file_path, arcname)
+        if os.path.isfile(source_path):
+            # --onefile: adiciona apenas o exe
+            arcname = os.path.basename(source_path)
+            zipf.write(source_path, arcname)
+        else:
+            # --onedir: adiciona toda a pasta
+            for root, dirs, files in os.walk(source_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, os.path.dirname(source_path))
+                    zipf.write(file_path, arcname)
     print(f"ZIP criado: {os.path.abspath(zip_path)} ({os.path.getsize(zip_path) / 1024 / 1024:.2f} MB)")
 
 
@@ -118,8 +124,21 @@ def main():
     # Pastas
     build_folder = "build"
     dist_folder = "dist"
-    exe_folder = os.path.join(dist_folder, APP_NAME)
     releases_folder = "releases"
+
+    # Detecta saída: --onefile gera exe direto em dist/, --onedir gera pasta
+    onefile_exe = os.path.join(dist_folder, f"{APP_NAME}.exe" if PLATFORM == "Windows" else APP_NAME)
+    onedir_folder = os.path.join(dist_folder, APP_NAME)
+
+    if os.path.isfile(onefile_exe):
+        exe_source = onefile_exe
+        print(f"Modo: --onefile (exe único)")
+    elif os.path.isdir(onedir_folder):
+        exe_source = onedir_folder
+        print(f"Modo: --onedir (pasta)")
+    else:
+        print(f"ERRO: Nenhum executável encontrado em {dist_folder}")
+        sys.exit(1)
 
     # Define nome do arquivo baseado na plataforma
     if PLATFORM == "Windows":
@@ -146,31 +165,24 @@ def main():
     else:
         print("\n[1/4] Pulando build (--skip-build)")
 
-    # Step 2: Verifica se executável existe
-    print("\n[2/4] Verificando executável...")
-    if PLATFORM == "Windows":
-        exe_path = os.path.join(exe_folder, f"{APP_NAME}.exe")
-    elif PLATFORM == "Darwin":
-        exe_path = os.path.join(exe_folder, f"{APP_NAME}.app")
-        if not os.path.exists(exe_path):
-            # Tenta encontrar o binário dentro do .app
-            exe_path = os.path.join(exe_folder, APP_NAME)
+    # Step 2: Re-detecta após build
+    if os.path.isfile(onefile_exe):
+        exe_source = onefile_exe
+    elif os.path.isdir(onedir_folder):
+        exe_source = onedir_folder
     else:
-        exe_path = os.path.join(exe_folder, APP_NAME)
-
-    if not os.path.exists(exe_folder):
-        print(f"ERRO: Pasta do executável não encontrada em {exe_folder}")
+        print(f"ERRO: Nenhum executável encontrado em {dist_folder}")
         sys.exit(1)
-    print(f"Executável encontrado: {exe_folder}")
+    print(f"Executável encontrado: {exe_source}")
 
     # Step 3: Criar arquivo compactado
     print("\n[3/4] Criando arquivo compactado...")
     if PLATFORM == "Windows":
-        create_zip(exe_folder, archive_path)
+        create_zip(exe_source, archive_path)
     elif PLATFORM == "Linux":
-        create_tarball(exe_folder, archive_path)
+        create_tarball(exe_source, archive_path)
     elif PLATFORM == "Darwin":
-        archive_path = create_dmg(exe_folder, archive_path)
+        archive_path = create_dmg(exe_source, archive_path)
 
     # Step 4: Copiar para pasta releases
     print("\n[4/4] Copiando para pasta releases...")

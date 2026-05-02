@@ -65,7 +65,7 @@ def main():
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--noconfirm",
-        "--onedir",          # Pasta única (mais rápido que onefile)
+        "--onefile",          # Exe único (funciona de qualquer lugar)
         "--windowed",        # Sem console
         "--clean",
         "--name", APP_NAME,
@@ -137,28 +137,20 @@ def main():
     print("  BUILD CONCLUÍDO!")
     print("=" * 60)
     if sys.platform == "win32":
-        exe_path = os.path.join("dist", APP_NAME, f"{APP_NAME}.exe")
+        exe_path = os.path.join("dist", f"{APP_NAME}.exe")
         print(f"\n  Executável: {os.path.abspath(exe_path)}")
-        print(f"  Pasta: {os.path.abspath(os.path.join('dist', APP_NAME))}")
-        print("\n  Para criar um atalho na área de trabalho:")
-        print(f"    1. Vá em: dist\\{APP_NAME}")
-        print(f"    2. Clique com o botão direito em '{APP_NAME}.exe'")
-        print(f"    3. Envie para > Área de Trabalho (criar atalho)")
+        print("\n  Exe único (--onefile): pode ser copiado para qualquer lugar.")
+        print("  Para distribuir: use python release.py --version X.Y.Z")
     elif sys.platform == "darwin":
-        app_path = os.path.join("dist", APP_NAME, f"{APP_NAME}.app")
-        print(f"\n  Aplicação: {os.path.abspath(app_path)}")
-        print(f"  Pasta: {os.path.abspath(os.path.join('dist', APP_NAME))}")
+        exe_path = os.path.join("dist", APP_NAME)
+        print(f"\n  Executável: {os.path.abspath(exe_path)}")
         print("\n  Para usar:")
-        print(f"    1. Vá em: dist/{APP_NAME}")
-        print(f"    2. Arraste {APP_NAME}.app para Applications")
+        print(f"    ./dist/{APP_NAME}")
     else:
-        bin_path = os.path.join("dist", APP_NAME, APP_NAME)
-        print(f"\n  Executável: {os.path.abspath(bin_path)}")
-        print(f"  Pasta: {os.path.abspath(os.path.join('dist', APP_NAME))}")
+        exe_path = os.path.join("dist", APP_NAME)
+        print(f"\n  Executável: {os.path.abspath(exe_path)}")
         print("\n  Para usar:")
-        print(f"    cd dist/{APP_NAME}")
-        print(f"    ./NumerPy Solver")
-    print("\n  Para distribuir: compacte a pasta inteira 'dist/" + APP_NAME + "'")
+        print(f"    ./dist/{APP_NAME}")
     print("=" * 60)
 
 
