@@ -103,23 +103,12 @@ def main():
         "--hidden-import", "pages.5_edo",
         "--hidden-import", "webview",
         "--hidden-import", "pkg_resources",
-        "--hidden-import", "clr",
-        "--hidden-import", "clr_loader",
-        "--hidden-import", "clr_loader.types",
-        "--hidden-import", "clr_loader.netfx",
-        "--hidden-import", "clr_loader.ffi",
-        "--hidden-import", "pythonnet",
-        "--collect-all", "clr_loader",
-        "--collect-all", "pythonnet",
         # Hooks específicos para webview no Windows
-        "--hidden-import", "webview",
         "--hidden-import", "webview.platforms",
         "--hidden-import", "webview.platforms.winforms",
         "--hidden-import", "webview.platforms.edgechromium",
         "--hidden-import", "webview.guilib",
         "--collect-all", "webview",
-        "--collect-all", "pythonnet",
-        "--collect-all", "clr_loader",
     ]
 
     if ICON_PATH and os.path.exists(ICON_PATH):
