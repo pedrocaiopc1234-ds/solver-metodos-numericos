@@ -18,6 +18,11 @@ import socket
 import logging
 import ctypes
 
+# Fix CWD quando lançado via atalho/barra de tarefas —
+# o Windows muda o diretório de trabalho para System32
+if getattr(sys, 'frozen', False):
+    os.chdir(os.path.dirname(sys.executable))
+
 # PyInstaller freeze support
 import multiprocessing
 multiprocessing.freeze_support()
