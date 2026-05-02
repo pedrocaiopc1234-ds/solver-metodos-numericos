@@ -12,6 +12,7 @@ import sys
 import os
 import threading
 import time
+import webbrowser
 
 # PyInstaller freeze support (necessário para executáveis no Windows)
 import multiprocessing
@@ -29,8 +30,6 @@ def get_resource_path(relative_path):
 if hasattr(sys, "_MEIPASS"):
     sys.path.insert(0, sys._MEIPASS)
 
-import webview
-
 # Importa o servidor Dash
 from app import server, app
 
@@ -47,8 +46,36 @@ def start_server():
     app.run(host=HOST, port=PORT, debug=False, use_reloader=False)
 
 
-def create_app():
-    """Cria e configura a janela do aplicativo."""
+def open_browser_window():
+    """Abre o aplicativo no navegador padrão do usuário."""
+    url = f"http://{HOST}:{PORT}"
+
+    # Aguarda o servidor estar respondendo
+    import urllib.request
+    for _ in range(50):
+        try:
+            urllib.request.urlopen(url, timeout=0.2)
+            break
+        except Exception:
+            time.sleep(0.1)
+
+    # Abre no navegador padrão
+    webbrowser.open(url)
+
+    # Mantém o servidor rodando
+    print("Aplicação aberta no navegador.")
+    print("Pressione Ctrl+C para parar o servidor.")
+
+    # Loop principal para manter o servidor ativo
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nFechando...")
+
+
+def run_native_window():
+    """Cria janela nativa com pywebview."""
     url = f"http://{HOST}:{PORT}"
 
     # Aguarda o servidor Flask/Dash estar respondendo
@@ -60,7 +87,7 @@ def create_app():
         except Exception:
             time.sleep(0.1)
     else:
-        print("AVISO: Servidor não respondeu a tempo. Abrindo janela mesmo assim...")
+        print("AVISO: Servidor não respondeu a tempo.")
 
     window_kwargs = {
         "title": TITLE,
@@ -103,7 +130,14 @@ def main():
     server_thread.start()
 
     time.sleep(2)
-    create_app()
+
+    # Tenta criar janela nativa, se falhar usa navegador
+    try:
+        run_native_window()
+    except Exception as e:
+        print(f"Não foi possível criar janela nativa: {e}")
+        print("Abrindo no navegador padrão...")
+        open_browser_window()
 
 
 if __name__ == "__main__":

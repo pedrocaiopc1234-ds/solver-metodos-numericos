@@ -1,7 +1,7 @@
 """
 NumerPy Solver — Build do Executável Desktop
 =============================================
-Cria um .exe standalone com PyInstaller.
+Cria um executável standalone com PyInstaller.
 
 Uso:
     python build.py
@@ -10,7 +10,9 @@ Requisitos:
     pip install pyinstaller
 
 Saída:
-    dist/NumerPy Solver/NumerPy Solver.exe
+    dist/NumerPy Solver/NumerPy Solver.exe (Windows)
+    dist/NumerPy Solver/NumerPy Solver (Linux)
+    dist/NumerPy Solver/NumerPy Solver.app (macOS)
 """
 
 import os
@@ -105,9 +107,14 @@ def main():
         "--hidden-import", "clr_loader",
         "--hidden-import", "clr_loader.types",
         "--hidden-import", "clr_loader.netfx",
+        "--hidden-import", "clr_loader.ffi",
         "--hidden-import", "pythonnet",
         "--collect-all", "clr_loader",
         "--collect-all", "pythonnet",
+        # Hooks específicos para webview no Windows
+        "--hidden-import", "webview.platforms.winforms",
+        "--hidden-import", "webview.platforms.edgechromium",
+        "--hidden-import", "webview.guilib",
     ]
 
     if ICON_PATH and os.path.exists(ICON_PATH):
