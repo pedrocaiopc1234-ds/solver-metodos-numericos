@@ -1,8 +1,8 @@
 """
-NumerPy Solver — Aplicação Desktop com pywebview
-=================================================
-Este script inicia o servidor Dash embutido e abre uma janela nativa
-para a aplicação, funcionando como um app desktop sem necessidade de navegador.
+NumerPy Solver — Aplicação Desktop
+===================================
+Este script inicia o servidor Dash e abre uma janela no navegador
+ou em uma janela nativa usando pywebview.
 
 Uso:
     python main.py
@@ -13,8 +13,9 @@ import os
 import threading
 import time
 import webbrowser
+import socket
 
-# PyInstaller freeze support (necessário para executáveis no Windows)
+# PyInstaller freeze support
 import multiprocessing
 multiprocessing.freeze_support()
 
@@ -30,9 +31,6 @@ def get_resource_path(relative_path):
 if hasattr(sys, "_MEIPASS"):
     sys.path.insert(0, sys._MEIPASS)
 
-# Importa webview depois de configurar o path (necessário para PyInstaller)
-import webview
-
 # Importa o servidor Dash
 from app import server, app
 
@@ -44,32 +42,39 @@ HEIGHT = 900
 TITLE = "NumerPy Solver — Métodos Numéricos"
 
 
+def is_port_available(port):
+    """Verifica se a porta está disponível."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex((HOST, port)) != 0
+
+
 def start_server():
     """Inicia o servidor Flask/Dash em uma thread separada."""
     app.run(host=HOST, port=PORT, debug=False, use_reloader=False)
 
 
-def open_browser_window():
-    """Abre o aplicativo no navegador padrão do usuário."""
-    url = f"http://{HOST}:{PORT}"
-
-    # Aguarda o servidor estar respondendo
+def wait_for_server(timeout=30):
+    """Aguarda o servidor estar respondendo."""
     import urllib.request
-    for _ in range(50):
+    url = f"http://{HOST}:{PORT}"
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
         try:
-            urllib.request.urlopen(url, timeout=0.2)
-            break
+            urllib.request.urlopen(url, timeout=1)
+            return True
         except Exception:
-            time.sleep(0.1)
+            time.sleep(0.5)
+    return False
 
-    # Abre no navegador padrão
+
+def open_in_browser():
+    """Abre o aplicativo no navegador padrão."""
+    url = f"http://{HOST}:{PORT}"
     webbrowser.open(url)
-
-    # Mantém o servidor rodando
-    print("Aplicação aberta no navegador.")
+    print(f"Aplicação aberta no navegador: {url}")
     print("Pressione Ctrl+C para parar o servidor.")
 
-    # Loop principal para manter o servidor ativo
     try:
         while True:
             time.sleep(1)
@@ -78,45 +83,43 @@ def open_browser_window():
 
 
 def run_native_window():
-    """Cria janela nativa com pywebview."""
+    """Tenta criar janela nativa com pywebview."""
+    try:
+        import webview
+    except ImportError:
+        print("pywebview não disponível. Usando navegador.")
+        return False
+
     url = f"http://{HOST}:{PORT}"
 
-    # Aguarda o servidor Flask/Dash estar respondendo
-    import urllib.request
-    for _ in range(50):
-        try:
-            urllib.request.urlopen(url, timeout=0.2)
-            break
-        except Exception:
-            time.sleep(0.1)
-    else:
-        print("AVISO: Servidor não respondeu a tempo.")
+    if not wait_for_server(timeout=10):
+        print("Servidor não respondeu a tempo.")
+        return False
 
-    window_kwargs = {
-        "title": TITLE,
-        "width": WIDTH,
-        "height": HEIGHT,
-        "min_size": (800, 600),
-        "resizable": True,
-        "fullscreen": False,
-        "frameless": False,
-        "easy_drag": True,
-    }
+    try:
+        window = webview.create_window(
+            title=TITLE,
+            url=url,
+            width=WIDTH,
+            height=HEIGHT,
+            min_size=(800, 600),
+            resizable=True,
+            fullscreen=False,
+        )
 
-    if sys.platform == "darwin":
-        window_kwargs["text_select"] = True
-    elif sys.platform == "linux":
-        window_kwargs["gui"] = "gtk"
+        # Tenta usar Edge Chromium no Windows
+        start_kwargs = {"debug": False}
+        if sys.platform == "win32":
+            start_kwargs["gui"] = "edgechromium"
+        elif sys.platform == "linux":
+            start_kwargs["gui"] = "gtk"
 
-    window = webview.create_window(url=url, **window_kwargs)
+        webview.start(**start_kwargs)
+        return True
 
-    start_kwargs = {"debug": False}
-    if sys.platform == "win32":
-        start_kwargs["gui"] = "edgechromium"
-    elif sys.platform == "linux":
-        start_kwargs["gui"] = "gtk"
-
-    webview.start(**start_kwargs)
+    except Exception as e:
+        print(f"Não foi possível criar janela nativa: {e}")
+        return False
 
 
 def main():
@@ -129,18 +132,15 @@ def main():
     print("\n  Pressione Ctrl+C para sair.\n")
     print("-" * 60)
 
+    # Inicia o servidor em thread separada
     server_thread = threading.Thread(target=start_server, daemon=True)
     server_thread.start()
 
     time.sleep(2)
 
-    # Tenta criar janela nativa, se falhar usa navegador
-    try:
-        run_native_window()
-    except Exception as e:
-        print(f"Não foi possível criar janela nativa: {e}")
-        print("Abrindo no navegador padrão...")
-        open_browser_window()
+    # Tenta janela nativa, fallback para navegador
+    if not run_native_window():
+        open_in_browser()
 
 
 if __name__ == "__main__":

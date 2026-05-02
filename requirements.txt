@@ -10,7 +10,6 @@ scipy
 pywebview
 
 # Windows-specific dependencies
-pythonnet>=3.1.0; platform_system == "Windows"
 pyinstaller; platform_system == "Windows"
 
 # Linux-specific dependencies
