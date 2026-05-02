@@ -30,6 +30,7 @@ def get_resource_path(relative_path):
 if hasattr(sys, "_MEIPASS"):
     sys.path.insert(0, sys._MEIPASS)
 
+# Importa webview depois de configurar o path (necessário para PyInstaller)
 import webview
 
 # Importa o servidor Dash
