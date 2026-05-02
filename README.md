@@ -9,9 +9,24 @@
 [![pywebview](https://img.shields.io/badge/pywebview-4.0+-purple.svg)](https://pywebview.flowrl.com)
 [![Testes](https://img.shields.io/badge/testes-305%20testes-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/Licença-MIT-green.svg)](LICENSE)
-[![PWA](https://img.shields.io/badge/PWA-Pronto-orange.svg)]()
+[![Release](https://img.shields.io/github/v/release/pedrocaiopc1234-ds/solver-metodos-numericos?label=Release)](https://github.com/pedrocaiopc1234-ds/solver-metodos-numericos/releases)
+[![Downloads](https://img.shields.io/github/downloads/pedrocaiopc1234-ds/solver-metodos-numericos/total?label=Downloads)](https://github.com/pedrocaiopc1234-ds/solver-metodos-numericos/releases)
 
 </div>
+
+---
+
+## 📥 Baixar Aplicativo Desktop
+
+**Quer usar sem instalar nada?** Baixe o executável pronto:
+
+1. Acesse [Releases](https://github.com/pedrocaiopc1234-ds/solver-metodos-numericos/releases)
+2. Baixe a versão mais recente: `NumerPy-Solver-vX.X.X.zip`
+3. Extraia e execute `NumerPy Solver.exe`
+
+**Funciona como qualquer aplicativo Windows** — sem precisar instalar Python ou dependências!
+
+Para mais detalhes, veja o guia completo em [DISTRIBUICAO.md](DISTRIBUICAO.md).
 
 ---
 
