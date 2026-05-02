@@ -4,7 +4,26 @@
       "PowerShell($env:PYTHONPATH=\".\"; & \"venv\\\\Scripts\\\\python.exe\" app.py)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe -m unittest discover -s tests -v)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe -m unittest tests.test_ode.TestRK4Robustness.test_robust_18 -v)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe -m unittest tests.test_ode.TestRK4Robustness.test_robust_18_cos_rhs -v)",
+      "PowerShell(& \"venv\\\\Scripts\\\\python.exe\" main.py)",
+      "PowerShell(& \"venv\\\\Scripts\\\\pip.exe\" install pythonnet --only-binary :all:)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(pip install *)",
+      "Bash(venv\\\\Scripts\\\\pip install *)",
+      "Bash(venv/Scripts/python.exe -m pip install scipy)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe -m unittest tests.test_roots.TestRootsValidacaoBiblioteca -v)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe -m unittest tests.test_interpolation.TestInterpolationValidacaoBiblioteca -v)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe -m unittest tests.test_integration.TestIntegrationValidacaoBiblioteca -v)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe -m unittest tests.test_linear_systems.TestLinearSystemsValidacaoBiblioteca -v)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe -m unittest tests.test_ode.TestODEValidacaoBiblioteca -v)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe compare_roots.py)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe compare_linear_systems.py)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe compare_ode.py)",
+      "Bash(chcp 65001)",
+      "Bash(PYTHONPATH=. venv/Scripts/python.exe compare_interpolation.py)"
     ]
   }
 }
