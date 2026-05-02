@@ -70,12 +70,12 @@ def update_n_warning(method, n):
     if method == "simpson":
         # Simpson 1/3: n deve ser par (múltiplo de 2)
         if n is not None and int(n) % 2 != 0:
-            return dbc.Alert("Para Simpson 1/3, n deve ser par (múltiplo de 2).", color="warning"), False
+            return dbc.Alert("Para Simpson 1/3, 'n' deve ser par (múltiplo de 2).", color="warning"), False
         return None, False
     elif method == "three_eight":
         # Simpson 3/8: n deve ser múltiplo de 3
         if n is not None and int(n) % 3 != 0:
-            return dbc.Alert("Para Simpson 3/8, n deve ser múltiplo de 3.", color="warning"), False
+            return dbc.Alert("Para Simpson 3/8, 'n' deve ser múltiplo de 3.", color="warning"), False
         return None, False
     return None, False
 
