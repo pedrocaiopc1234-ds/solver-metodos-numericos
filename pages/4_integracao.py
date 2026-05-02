@@ -67,12 +67,16 @@ layout = dbc.Container([
     State("int-n", "value"),
 )
 def update_n_warning(method, n):
-    if method == "three_eight":
+    if method == "simpson":
+        # Simpson 1/3: n deve ser par (múltiplo de 2)
+        if n is not None and int(n) % 2 != 0:
+            return dbc.Alert("Para Simpson 1/3, n deve ser par (múltiplo de 2).", color="warning"), False
+        return None, False
+    elif method == "three_eight":
+        # Simpson 3/8: n deve ser múltiplo de 3
         if n is not None and int(n) % 3 != 0:
             return dbc.Alert("Para Simpson 3/8, n deve ser múltiplo de 3.", color="warning"), False
-        return dbc.Alert("Dica: Simpson 3/8 requer n múltiplo de 3 (ex: 3, 6, 9, 99).", color="info"), False
-    if method == "simpson" and n is not None and int(n) % 2 != 0:
-        return dbc.Alert("Para Simpson 1/3, n deve ser par. O cálculo irá falhar se n for ímpar.", color="warning"), False
+        return None, False
     return None, False
 
 
@@ -102,8 +106,16 @@ def calculate(n_clicks, method, f_str, a, b, n):
         if not v["valid"]:
             errors.append(v["error"])
 
-        if method != "three_eight":
-            v = validate_subintervals(n, must_be_even=(method == "simpson"))
+        if method == "simpson":
+            v = validate_subintervals(n, must_be_even=True)
+            if not v["valid"]:
+                errors.append(v["error"])
+        elif method == "three_eight":
+            if int(n) % 3 != 0:
+                errors.append("n deve ser múltiplo de 3 para Simpson 3/8")
+        else:
+            # trapezoidal: apenas verifica n > 0
+            v = validate_subintervals(n, must_be_even=False)
             if not v["valid"]:
                 errors.append(v["error"])
 
@@ -118,9 +130,6 @@ def calculate(n_clicks, method, f_str, a, b, n):
             result = trapezoidal_repeated(f, a, b, n)
             fig = plot_trapezoidal(f, a, b, n, result["result"]) if result.get("success") else None
         else:
-            # Para Simpson 3/8, validar se n é múltiplo de 3
-            if int(n) % 3 != 0:
-                return dbc.Alert("❌ Para Simpson 3/8, n deve ser múltiplo de 3.", color="danger")
             result = three_eight_method(f, a, b, n)
             fig = plot_three_eight(f, a, b, n, result["result"]) if result.get("success") else None
 
