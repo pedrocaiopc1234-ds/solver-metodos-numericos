@@ -18,13 +18,19 @@
 
 ## 📥 Baixar Aplicativo Desktop
 
-**Quer usar sem instalar nada?** Baixe o executável pronto:
+**Quer usar sem instalar nada?** Baixe o executável pronto para seu sistema:
+
+| Sistema | Download |
+|---------|----------|
+| **Windows** | `NumerPy-Solver-vX.X.X-windows.zip` |
+| **Linux** | `NumerPy-Solver-vX.X.X-linux.tar.gz` |
+| **macOS** | `NumerPy-Solver-vX.X.X-macos.dmg` |
 
 1. Acesse [Releases](https://github.com/pedrocaiopc1234-ds/solver-metodos-numericos/releases)
-2. Baixe a versão mais recente: `NumerPy-Solver-vX.X.X.zip`
-3. Extraia e execute `NumerPy Solver.exe`
+2. Baixe a versão para seu sistema operacional
+3. Siga as instruções de instalação
 
-**Funciona como qualquer aplicativo Windows** — sem precisar instalar Python ou dependências!
+**Funciona como qualquer aplicativo nativo** — sem precisar instalar Python ou dependências!
 
 Para mais detalhes, veja o guia completo em [DISTRIBUICAO.md](DISTRIBUICAO.md).
 

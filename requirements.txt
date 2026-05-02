@@ -5,13 +5,22 @@ numpy
 plotly
 pandas
 scipy
-scipy
 
 # Desktop App (pywebview)
 pywebview
-pythonnet==3.1.0rc0
+
+# Windows-specific dependencies
+pythonnet==3.1.0rc0; platform_system == "Windows"
+pyinstaller; platform_system == "Windows"
+
+# Linux-specific dependencies
+pyinstaller; platform_system == "Linux"
+
+# macOS-specific dependencies
+pyinstaller; platform_system == "Darwin"
+pyobjc-framework-Cocoa; platform_system == "Darwin"
+pyobjc-framework-WebKit; platform_system == "Darwin"
+
+# Optional utilities
 proxy_tools
 bottle
-
-# Optional: criar executável
-pyinstaller; platform_system == "Windows"

@@ -75,12 +75,16 @@ def create_app():
 
     if sys.platform == "darwin":
         window_kwargs["text_select"] = True
+    elif sys.platform == "linux":
+        window_kwargs["gui"] = "gtk"
 
     webview.create_window(url=url, **window_kwargs)
 
     start_kwargs = {"debug": False}
     if sys.platform == "win32":
         start_kwargs["gui"] = "edgechromium"
+    elif sys.platform == "linux":
+        start_kwargs["gui"] = "gtk"
 
     webview.start(**start_kwargs)
 

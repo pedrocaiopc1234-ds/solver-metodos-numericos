@@ -147,3 +147,4 @@ tmp/
 temp/
 *.tmp
 *.bak
+releases/

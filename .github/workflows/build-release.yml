@@ -1,0 +1,169 @@
+name: Build Multi-Platform Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build executable
+      run: |
+        python build.py
+      shell: bash
+
+    - name: Create ZIP
+      run: |
+        cd "dist/NumerPy Solver"
+        7z a -tzip ../../NumerPy-Solver-${{ github.ref_name }}-windows.zip .
+      shell: bash
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-build
+        path: NumerPy-Solver-${{ github.ref_name }}-windows.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build executable
+      run: |
+        python build.py
+      shell: bash
+
+    - name: Create tarball
+      run: |
+        cd dist/NumerPy\ Solver
+        tar -czvf ../../NumerPy-Solver-${{ github.ref_name }}-linux.tar.gz .
+      shell: bash
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-build
+        path: NumerPy-Solver-${{ github.ref_name }}-linux.tar.gz
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build executable
+      run: |
+        python build.py
+      shell: bash
+
+    - name: Create DMG
+      run: |
+        # Criar estrutura para DMG
+        mkdir -p "dist/NumerPy Solver.app"
+        cp -r "dist/NumerPy Solver/NumerPy Solver.app" "dist/NumerPy Solver.app/" 2>/dev/null || true
+
+        # Criar DMG
+        hdiutil create -volname "NumerPy Solver" -srcfolder "dist/NumerPy Solver" -ov -format UDZO NumerPy-Solver-${{ github.ref_name }}-macos.dmg
+      shell: bash
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-build
+        path: NumerPy-Solver-${{ github.ref_name }}-macos.dmg
+
+  create-release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: '*-build'
+        merge-multiple: true
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          NumerPy-Solver-${{ github.ref_name }}-windows.zip
+          NumerPy-Solver-${{ github.ref_name }}-linux.tar.gz
+          NumerPy-Solver-${{ github.ref_name }}-macos.dmg
+        body: |
+          ## 🎉 NumerPy Solver ${{ github.ref_name }}
+
+          Aplicativo desktop multiplataforma para Cálculo Numérico.
+
+          ### 📥 Download por Plataforma
+
+          #### Windows
+          - Baixe `NumerPy-Solver-${{ github.ref_name }}-windows.zip`
+          - Extraia e execute `NumerPy Solver.exe`
+          - Requer Windows 10/11
+
+          #### Linux
+          - Baixe `NumerPy-Solver-${{ github.ref_name }}-linux.tar.gz`
+          - Extraia: `tar -xzf NumerPy-Solver-${{ github.ref_name }}-linux.tar.gz`
+          - Execute: `./NumerPy Solver`
+          - Requer GTK3 e WebView instalados
+
+          #### macOS
+          - Baixe `NumerPy-Solver-${{ github.ref_name }}-macos.dmg`
+          - Monte o DMG e arraste para Applications
+          - Requer macOS 10.15+
+
+          ### ✨ Funcionalidades
+          - Raízes de funções (Bisseção, Newton, Secante)
+          - Sistemas lineares (LU, Gauss, Gauss-Seidel, Jacobi)
+          - Interpolação polinomial (Newton, Lagrange)
+          - Integração numérica (Simpson 1/3, 3/8, Trapézio)
+          - EDOs (Euler, Runge-Kutta 4)
+
+          ### 📝 Notas
+          - Sem necessidade de instalar Python
+          - Interface baseada em Dash + pywebview
+        draft: true
+        prerelease: false

@@ -20,7 +20,17 @@ import subprocess
 
 APP_NAME = "NumerPy Solver"
 ENTRY_POINT = "main.py"
-ICON_PATH = os.path.join("assets", "icon.ico")
+
+# Detecta plataforma para ícone e nome do executável
+if sys.platform == "win32":
+    ICON_PATH = os.path.join("assets", "icon.ico")
+    EXE_NAME = f"{APP_NAME}.exe"
+elif sys.platform == "darwin":
+    ICON_PATH = os.path.join("assets", "icon.icns") if os.path.exists(os.path.join("assets", "icon.icns")) else None
+    EXE_NAME = APP_NAME
+else:  # Linux
+    ICON_PATH = os.path.join("assets", "icon.png") if os.path.exists(os.path.join("assets", "icon.png")) else None
+    EXE_NAME = APP_NAME
 
 
 def run(cmd):
@@ -33,15 +43,21 @@ def run(cmd):
 
 def main():
     # Verifica se o ícone existe; se não, tenta gerar
-    if not os.path.exists(ICON_PATH):
-        print("Ícone não encontrado. Tentando gerar com create_icon.py...")
-        subprocess.run([sys.executable, "create_icon.py"], check=False)
+    if ICON_PATH and not os.path.exists(ICON_PATH):
+        print(f"Ícone não encontrado: {ICON_PATH}")
+        if sys.platform == "win32":
+            print("Tentando gerar com create_icon.py...")
+            subprocess.run([sys.executable, "create_icon.py"], check=False)
 
-    # Limpa builds antigos
+    # Limpa builds antigos (ignora erros de permissão no Windows)
     for folder in ["build", "dist"]:
         if os.path.exists(folder):
             print(f"Removendo pasta antiga: {folder}")
-            shutil.rmtree(folder)
+            try:
+                shutil.rmtree(folder)
+            except PermissionError:
+                print(f"Aviso: Não foi possível remover {folder}. Tentando ignorar...")
+                pass
 
     # Monta comando do PyInstaller
     cmd = [
@@ -87,10 +103,15 @@ def main():
         "--hidden-import", "pkg_resources",
     ]
 
-    if os.path.exists(ICON_PATH):
+    if ICON_PATH and os.path.exists(ICON_PATH):
         cmd += ["--icon", ICON_PATH]
     else:
-        print("AVISO: Ícone não encontrado. O .exe usará o ícone padrão do Windows.")
+        if sys.platform == "win32":
+            print("AVISO: Ícone não encontrado. O .exe usará o ícone padrão do Windows.")
+        elif sys.platform == "darwin":
+            print("AVISO: Ícone .icns não encontrado. Usando ícone padrão do macOS.")
+        else:
+            print("AVISO: Ícone PNG não encontrado. Usando ícone padrão no Linux.")
 
     cmd.append(ENTRY_POINT)
 
@@ -99,13 +120,28 @@ def main():
     print("\n" + "=" * 60)
     print("  BUILD CONCLUÍDO!")
     print("=" * 60)
-    exe_path = os.path.join("dist", APP_NAME, f"{APP_NAME}.exe")
-    print(f"\n  Executável: {os.path.abspath(exe_path)}")
-    print(f"  Pasta: {os.path.abspath(os.path.join('dist', APP_NAME))}")
-    print("\n  Para criar um atalho na área de trabalho:")
-    print(f"    1. Vá em: dist\\{APP_NAME}")
-    print(f"    2. Clique com o botão direito em '{APP_NAME}.exe'")
-    print(f"    3. Envie para > Área de Trabalho (criar atalho)")
+    if sys.platform == "win32":
+        exe_path = os.path.join("dist", APP_NAME, f"{APP_NAME}.exe")
+        print(f"\n  Executável: {os.path.abspath(exe_path)}")
+        print(f"  Pasta: {os.path.abspath(os.path.join('dist', APP_NAME))}")
+        print("\n  Para criar um atalho na área de trabalho:")
+        print(f"    1. Vá em: dist\\{APP_NAME}")
+        print(f"    2. Clique com o botão direito em '{APP_NAME}.exe'")
+        print(f"    3. Envie para > Área de Trabalho (criar atalho)")
+    elif sys.platform == "darwin":
+        app_path = os.path.join("dist", APP_NAME, f"{APP_NAME}.app")
+        print(f"\n  Aplicação: {os.path.abspath(app_path)}")
+        print(f"  Pasta: {os.path.abspath(os.path.join('dist', APP_NAME))}")
+        print("\n  Para usar:")
+        print(f"    1. Vá em: dist/{APP_NAME}")
+        print(f"    2. Arraste {APP_NAME}.app para Applications")
+    else:
+        bin_path = os.path.join("dist", APP_NAME, APP_NAME)
+        print(f"\n  Executável: {os.path.abspath(bin_path)}")
+        print(f"  Pasta: {os.path.abspath(os.path.join('dist', APP_NAME))}")
+        print("\n  Para usar:")
+        print(f"    cd dist/{APP_NAME}")
+        print(f"    ./NumerPy Solver")
     print("\n  Para distribuir: compacte a pasta inteira 'dist/" + APP_NAME + "'")
     print("=" * 60)
 
