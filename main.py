@@ -1,8 +1,8 @@
 """
 NumerPy Solver — Aplicação Desktop
 ===================================
-Este script inicia o servidor Dash e abre uma janela no navegador
-ou em uma janela nativa usando pywebview.
+Este script inicia o servidor Dash e abre uma janela nativa
+usando pywebview (com fallback para navegador).
 
 Uso:
     python main.py
@@ -10,15 +10,66 @@ Uso:
 
 import sys
 import os
+import subprocess
 import threading
 import time
 import webbrowser
 import socket
 import logging
+import ctypes
 
 # PyInstaller freeze support
 import multiprocessing
 multiprocessing.freeze_support()
+
+
+def unblock_dlls():
+    """Remove Zone.Identifier (Mark of the Web) de DLLs no diretório do app.
+
+    Windows marca arquivos baixados da internet com um fluxo alternativo
+    'Zone.Identifier'. O .NET Framework se recusa a carregar DLLs com essa
+    marca, causando o erro:
+      RuntimeError: Failed to resolve Python.Runtime.Loader.Initialize
+
+    Esta função remove essa marca de todos os arquivos no diretório do app
+    quando executado a partir de um build PyInstaller.
+    """
+    if not hasattr(sys, "_MEIPASS"):
+        return  # Só necessário no executável empacotado
+
+    app_dir = sys._MEIPASS
+
+    # Método 1: PowerShell Unblock-File (mais confiável)
+    try:
+        ps_cmd = (
+            f'Get-ChildItem -Path "{app_dir}" -Recurse -File '
+            f'| Unblock-File'
+        )
+        subprocess.run(
+            ["powershell", "-Command", ps_cmd],
+            capture_output=True,
+            timeout=30,
+        )
+        log.info(f"Zone.Identifier removido de: {app_dir}")
+        return
+    except Exception:
+        pass
+
+    # Método 2: API do Windows via ctypes
+    try:
+        for root, _dirs, files in os.walk(app_dir):
+            for fname in files:
+                fpath = os.path.join(root, fname)
+                try:
+                    ctypes.windll.kernel32.DeleteFileW(
+                        f"{fpath}:Zone.Identifier"
+                    )
+                except Exception:
+                    pass
+        log.info(f"Zone.Identifier removido (ctypes) de: {app_dir}")
+    except Exception as e:
+        log.warning(f"Não foi possível remover Zone.Identifier: {e}")
+
 
 # Configuração de logging — funciona tanto em modo console quanto windowed
 LOG_FILE = os.path.join(
@@ -99,6 +150,9 @@ def open_in_browser():
 
 def run_native_window():
     """Tenta criar janela nativa com pywebview."""
+    # Remove Zone.Identifier antes de importar clr/pythonnet
+    unblock_dlls()
+
     try:
         import webview
     except ImportError as e:
