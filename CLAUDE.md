@@ -76,8 +76,10 @@ Each page uses `dash.register_page()` and follows the same pattern: layout with 
 ## Packaging pitfalls (lessons learned)
 
 - **pythonnet + clr_loader must be in `--collect-all`**: PyInstaller's `--collect-all webview` does NOT include `pythonnet` or `clr_loader`. Without them, `import clr` fails at runtime and the app crashes immediately.
+- **Zone.Identifier (Mark of the Web) blocks .NET DLLs**: When users download the ZIP from GitHub, Windows adds `Zone.Identifier` alternate data streams to all files. The .NET Framework refuses to load DLLs with this flag, causing `RuntimeError: Failed to resolve Python.Runtime.Loader.Initialize`. The fix is `unblock_dlls()` in `main.py` — it runs `PowerShell Unblock-File` on all files in `_MEIPASS` before importing pywebview.
 - **`gui="edgechromium"` is a no-op on Windows**: The `guilib.initialize()` function only recognizes `"qt"` and `"winforms"` as GUI backends for Windows. Passing `"edgechromium"` falls through to the default (`winforms`), which already uses Edge Chromium via WebView2.
 - **`--windowed` mode has no stdout**: All diagnostic output must go through `logging` with a file handler, not `print()`.
 - **OneDrive can lock build/dist folders**: If `shutil.rmtree` fails with `PermissionError`, manually delete `build/` and `dist/` before rebuilding.
 - **WebView2 runtime**: On Windows 10, the user may need to install the WebView2 Runtime separately. Windows 11 includes it by default.
-- **.NET 6+ Runtime**: Required by pythonnet/clr_loader. The app will fail on machines without .NET installed.
+- **.NET Framework 4.7.2+**: pythonnet uses .NET Framework (netfx) on Windows by default, not .NET Core. .NET Framework 4.x is pre-installed on Windows 10+. No extra install needed.
+- **Current release**: v1.0.9 (GitHub: `pedrocaiopc1234-ds/solver-metodos-numericos`)
