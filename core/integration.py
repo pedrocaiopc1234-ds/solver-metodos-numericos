@@ -99,7 +99,7 @@ def trapezoidal_repeated(f, a, b, n=4):
                 "error": f"Método falhou: {str(e)}"}
 
 
-def three_eight_method(f, a, b, n=3):
+def three_eight_method(f, a, b, n=99):
     """
     Simpson's 3/8 rule for numerical integration (repeated version).
 

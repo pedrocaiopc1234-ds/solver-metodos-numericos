@@ -48,7 +48,7 @@ layout = dbc.Container([
             dbc.Row([
                 dbc.Col([
                     dbc.Label("n (subintervalos)"),
-                    dbc.Input(id="int-n", type="number", value=4, step=1),
+                    dbc.Input(id="int-n", type="number", value=99, step=1),
                 ], width=12, md=4),
             ], className="mb-3"),
             html.Div(id="int-n-warning"),
@@ -68,7 +68,9 @@ layout = dbc.Container([
 )
 def update_n_warning(method, n):
     if method == "three_eight":
-        return dbc.Alert("Simpson 3/8 usa n = 3 fixo.", color="info"), True
+        if n is not None and int(n) % 3 != 0:
+            return dbc.Alert("Para Simpson 3/8, n deve ser múltiplo de 3.", color="warning"), False
+        return dbc.Alert("Dica: Simpson 3/8 requer n múltiplo de 3 (ex: 3, 6, 9, 99).", color="info"), False
     if method == "simpson" and n is not None and int(n) % 2 != 0:
         return dbc.Alert("Para Simpson 1/3, n deve ser par. O cálculo irá falhar se n for ímpar.", color="warning"), False
     return None, False
@@ -116,8 +118,11 @@ def calculate(n_clicks, method, f_str, a, b, n):
             result = trapezoidal_repeated(f, a, b, n)
             fig = plot_trapezoidal(f, a, b, n, result["result"]) if result.get("success") else None
         else:
-            result = three_eight_method(f, a, b)
-            fig = plot_three_eight(f, a, b, result["result"]) if result.get("success") else None
+            # Para Simpson 3/8, validar se n é múltiplo de 3
+            if int(n) % 3 != 0:
+                return dbc.Alert("❌ Para Simpson 3/8, n deve ser múltiplo de 3.", color="danger")
+            result = three_eight_method(f, a, b, n)
+            fig = plot_three_eight(f, a, b, n, result["result"]) if result.get("success") else None
 
         children = []
         if not result.get("success"):
@@ -125,7 +130,7 @@ def calculate(n_clicks, method, f_str, a, b, n):
             return children
 
         children.append(dbc.Alert("Integral calculada com sucesso!", color="success"))
-        n_used = 3 if method == "three_eight" else n
+        n_used = n
         children.append(dbc.Row([
             dbc.Col(dbc.Card([dbc.CardBody([html.H5("Integral aproximada"), html.P(f"{result['result']:.10f}")])]), width=6),
             dbc.Col(dbc.Card([dbc.CardBody([html.H5("n (subintervalos)"), html.P(str(n_used))])]), width=6),

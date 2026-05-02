@@ -408,32 +408,54 @@ def plot_trapezoidal(f, a, b, n, result):
     return fig
 
 
-def plot_three_eight(f, a, b, result):
+def plot_three_eight(f, a, b, n, result):
     """
-    Plot Simpson's 3/8 rule: function and cubic area.
+    Plot Simpson's 3/8 rule (repeated version): function and integration area.
+
+    Args:
+        f: function to plot
+        a, b: integration interval
+        n: number of subintervals (must be multiple of 3)
+        result: integration result value
     """
     a, b = float(a), float(b)
-    h = (b - a) / 3
-    x_nodes = np.array([a, a + h, a + 2*h, b])
+    n = int(n)
+
+    if n % 3 != 0:
+        raise ValueError("n deve ser múltiplo de 3 para Simpson 3/8")
+
+    h = (b - a) / n
+    x_nodes = np.linspace(a, b, n + 1)
     y_nodes = np.array([f(xi) for xi in x_nodes])
 
     xs = np.linspace(a, b, 500)
     ys = np.array([f(xi) for xi in xs])
 
-    # Cubic interpolant through 4 points
+    # Plot area under the piecewise cubic approximation
     px = np.linspace(a, b, 100)
     py = np.zeros_like(px)
-    for k, xk in enumerate(x_nodes):
-        Lk = np.ones_like(px)
-        for m, xm in enumerate(x_nodes):
-            if m != k:
-                Lk *= (px - xm) / (xk - xm)
-        py += y_nodes[k] * Lk
+
+    # For each segment of 3 subintervals, do cubic interpolation
+    for i in range(0, n, 3):
+        seg_x = x_nodes[i:i+4]  # 4 points per 3/8 block
+        seg_y = y_nodes[i:i+4]
+        mask = (px >= seg_x[0]) & (px <= seg_x[-1])
+        px_seg = px[mask]
+        if len(px_seg) > 0:
+            # Lagrange cubic interpolation for this segment
+            py_seg = np.zeros_like(px_seg)
+            for k, xk in enumerate(seg_x):
+                Lk = np.ones_like(px_seg)
+                for m, xm in enumerate(seg_x):
+                    if m != k:
+                        Lk *= (px_seg - xm) / (xk - xm)
+                py_seg += seg_y[k] * Lk
+            py[mask] = py_seg
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=xs, y=ys, mode='lines', name='f(x)'))
     fig.add_trace(go.Scatter(x=x_nodes, y=y_nodes, mode='markers',
-                              marker=dict(size=10, color='red'),
+                              marker=dict(size=8, color='red'),
                               name='Pontos de integração'))
     fig.add_trace(go.Scatter(x=px, y=py, fill='tonexty', mode='lines',
                               line=dict(width=0),
@@ -444,7 +466,7 @@ def plot_three_eight(f, a, b, result):
                               showlegend=False))
 
     fig.add_hline(y=0, line=dict(color='black', width=1))
-    fig.update_layout(title=f'Regra de Simpson 3/8 (resultado≈{result:.6f})',
+    fig.update_layout(title=f'Regra de Simpson 3/8 (n={n}, resultado≈{result:.6f})',
                       xaxis_title='x', yaxis_title='f(x)',
                       template='plotly_white')
     return fig
