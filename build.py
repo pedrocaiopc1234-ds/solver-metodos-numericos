@@ -109,6 +109,14 @@ def main():
         "--hidden-import", "webview.platforms.edgechromium",
         "--hidden-import", "webview.guilib",
         "--collect-all", "webview",
+        # pythonnet + clr_loader são obrigatórios para pywebview no Windows
+        "--hidden-import", "clr",
+        "--hidden-import", "pythonnet",
+        "--hidden-import", "clr_loader",
+        "--hidden-import", "clr_loader.ffi",
+        "--hidden-import", "clr_loader.util",
+        "--collect-all", "pythonnet",
+        "--collect-all", "clr_loader",
     ]
 
     if ICON_PATH and os.path.exists(ICON_PATH):

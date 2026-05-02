@@ -14,10 +14,25 @@ import threading
 import time
 import webbrowser
 import socket
+import logging
 
 # PyInstaller freeze support
 import multiprocessing
 multiprocessing.freeze_support()
+
+# Configuração de logging — funciona tanto em modo console quanto windowed
+LOG_FILE = os.path.join(
+    os.path.expanduser("~"), "NumerPy_Solver.log"
+)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding="utf-8", mode="w"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
+log = logging.getLogger("NumerPy")
 
 
 def get_resource_path(relative_path):
@@ -72,28 +87,28 @@ def open_in_browser():
     """Abre o aplicativo no navegador padrão."""
     url = f"http://{HOST}:{PORT}"
     webbrowser.open(url)
-    print(f"Aplicação aberta no navegador: {url}")
-    print("Pressione Ctrl+C para parar o servidor.")
+    log.info(f"Aplicação aberta no navegador: {url}")
+    log.info("Pressione Ctrl+C para parar o servidor.")
 
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\nFechando...")
+        log.info("Fechando...")
 
 
 def run_native_window():
     """Tenta criar janela nativa com pywebview."""
     try:
         import webview
-    except ImportError:
-        print("pywebview não disponível. Usando navegador.")
+    except ImportError as e:
+        log.warning(f"pywebview não disponível ({e}). Usando navegador.")
         return False
 
     url = f"http://{HOST}:{PORT}"
 
-    if not wait_for_server(timeout=10):
-        print("Servidor não respondeu a tempo.")
+    if not wait_for_server(timeout=15):
+        log.error("Servidor não respondeu a tempo.")
         return False
 
     try:
@@ -107,30 +122,22 @@ def run_native_window():
             fullscreen=False,
         )
 
-        # Tenta usar Edge Chromium no Windows
-        start_kwargs = {"debug": False}
-        if sys.platform == "win32":
-            start_kwargs["gui"] = "edgechromium"
-        elif sys.platform == "linux":
-            start_kwargs["gui"] = "gtk"
-
-        webview.start(**start_kwargs)
+        webview.start(debug=False)
         return True
 
     except Exception as e:
-        print(f"Não foi possível criar janela nativa: {e}")
+        log.error(f"Não foi possível criar janela nativa: {e}", exc_info=True)
         return False
 
 
 def main():
     """Função principal que inicia o servidor e a aplicação."""
-    print("=" * 60)
-    print("  NumerPy Solver — Aplicação Desktop")
-    print("=" * 60)
-    print(f"\n  Iniciando servidor em http://{HOST}:{PORT}")
-    print(f"  Tamanho da janela: {WIDTH}x{HEIGHT}")
-    print("\n  Pressione Ctrl+C para sair.\n")
-    print("-" * 60)
+    log.info("=" * 60)
+    log.info("  NumerPy Solver — Aplicação Desktop")
+    log.info("=" * 60)
+    log.info(f"Iniciando servidor em http://{HOST}:{PORT}")
+    log.info(f"Tamanho da janela: {WIDTH}x{HEIGHT}")
+    log.info(f"Log salvo em: {LOG_FILE}")
 
     # Inicia o servidor em thread separada
     server_thread = threading.Thread(target=start_server, daemon=True)
