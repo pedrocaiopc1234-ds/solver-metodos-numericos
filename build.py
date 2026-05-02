@@ -112,10 +112,14 @@ def main():
         "--collect-all", "clr_loader",
         "--collect-all", "pythonnet",
         # Hooks específicos para webview no Windows
+        "--hidden-import", "webview",
+        "--hidden-import", "webview.platforms",
         "--hidden-import", "webview.platforms.winforms",
         "--hidden-import", "webview.platforms.edgechromium",
         "--hidden-import", "webview.guilib",
         "--collect-all", "webview",
+        "--collect-all", "pythonnet",
+        "--collect-all", "clr_loader",
     ]
 
     if ICON_PATH and os.path.exists(ICON_PATH):
