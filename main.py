@@ -30,6 +30,8 @@ def get_resource_path(relative_path):
 if hasattr(sys, "_MEIPASS"):
     sys.path.insert(0, sys._MEIPASS)
 
+import webview
+
 # Importa o servidor Dash
 from app import server, app
 
@@ -105,7 +107,7 @@ def run_native_window():
     elif sys.platform == "linux":
         window_kwargs["gui"] = "gtk"
 
-    webview.create_window(url=url, **window_kwargs)
+    window = webview.create_window(url=url, **window_kwargs)
 
     start_kwargs = {"debug": False}
     if sys.platform == "win32":
