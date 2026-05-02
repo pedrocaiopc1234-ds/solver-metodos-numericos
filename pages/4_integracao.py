@@ -111,11 +111,12 @@ def calculate(n_clicks, method, f_str, a, b, n):
             if not v["valid"]:
                 errors.append(v["error"])
         elif method == "three_eight":
-            if int(n) % 3 != 0:
-                errors.append("n deve ser múltiplo de 3 para Simpson 3/8")
+            v = validate_subintervals(n, must_be_multiple_of_3=True)
+            if not v["valid"]:
+                errors.append(v["error"])
         else:
             # trapezoidal: apenas verifica n > 0
-            v = validate_subintervals(n, must_be_even=False)
+            v = validate_subintervals(n)
             if not v["valid"]:
                 errors.append(v["error"])
 
