@@ -101,6 +101,13 @@ def main():
         "--hidden-import", "pages.5_edo",
         "--hidden-import", "webview",
         "--hidden-import", "pkg_resources",
+        "--hidden-import", "clr",
+        "--hidden-import", "clr_loader",
+        "--hidden-import", "clr_loader.types",
+        "--hidden-import", "clr_loader.netfx",
+        "--hidden-import", "pythonnet",
+        "--collect-all", "clr_loader",
+        "--collect-all", "pythonnet",
     ]
 
     if ICON_PATH and os.path.exists(ICON_PATH):
