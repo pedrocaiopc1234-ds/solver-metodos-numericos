@@ -115,6 +115,7 @@ def main():
         "--hidden-import", "webview.platforms.winforms",
         "--hidden-import", "webview.platforms.edgechromium",
         "--hidden-import", "webview.guilib",
+        "--collect-all", "webview",
     ]
 
     if ICON_PATH and os.path.exists(ICON_PATH):
