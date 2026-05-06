@@ -381,7 +381,7 @@ Para documentação técnica aprofundada (fundamentos matemáticos, algoritmos, 
 
 ## Autor
 
-**Pedro Caio** — Bacharelado em Matemática
+**Pedro Caio** — Bacharelado em Matemática, Instituto de Matemática e Estatística — UFG
 
 ## Licença
 
