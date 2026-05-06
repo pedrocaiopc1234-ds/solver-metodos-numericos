@@ -62,9 +62,10 @@ solver-metodos-numericos/
 │   ├── interpolation.py          # newton_interpolation, lagrange_interpolation
 │   ├── integration.py            # simpson, trapezoidal_repeated, three_eight_method
 │   ├── ode.py                    # euler_method, runge_kutta_4
-│   └── plot.py                   # Geradores de figuras Plotly (8 funções)
+│   └── plot.py                   # Geradores de figuras Plotly
 │
 ├── validation/                   # Validação de entrada (sanitização)
+│   ├── __init__.py
 │   ├── roots_validation.py       # f(x), intervalo, tolerância, iterações
 │   ├── linear_systems_validation.py  # matriz, vetor, dimensões
 │   ├── interpolation_validation.py    # pontos, avaliação
@@ -84,6 +85,7 @@ solver-metodos-numericos/
 │   └── 5_edo.py                  # EDOs
 │
 ├── tests/                        # Testes unitários (305 testes)
+│   ├── __init__.py
 │   ├── test_roots.py             # 65 testes (básicos + robustez + scipy)
 │   ├── test_linear_systems.py    # 84 testes
 │   ├── test_interpolation.py     # 42 testes
@@ -102,13 +104,16 @@ solver-metodos-numericos/
 │   ├── style.css                 # CSS responsivo (dark theme, mobile)
 │   ├── icon.ico                  # Ícone do aplicativo
 │   ├── manifest.json             # PWA manifest
+│   ├── pwa_register.py           # Registro PWA
 │   └── sw.js                     # Service Worker (offline)
+│
+├── .github/workflows/build-release.yml  # CI/CD (build automático)
 │
 ├── docs.md                       # Documentação técnica completa
 ├── CLAUDE.md                      # Guia interno do projeto
 ├── DISTRIBUICAO.md                # Guia de distribuição
 ├── INSTALACAO.md                  # Guia de instalação
-└── .github/workflows/build-release.yml  # CI/CD (build automático)
+└── .gitignore
 ```
 
 ---
@@ -381,7 +386,7 @@ Para documentação técnica aprofundada (fundamentos matemáticos, algoritmos, 
 
 ## Autor
 
-**Pedro Caio** — Bacharelado em Matemática, Instituto de Matemática e Estatística — UFG
+**Pedro Caio Morais Borges** — Bacharelado em Matemática, Instituto de Matemática e Estatística — UFG
 
 ## Licença
 
